@@ -1,1 +1,25 @@
-Repo creado
+Aporte de Sebastián - Fase 1
+
+En esta rama se trabajaron las clases base "Estudiante" y "Validador" para el proyecto de Gestión de Estudiantes.
+
+Clases desarrolladas
+
+*Estudiante
+
+Representa la información principal de un estudiante dentro del sistema.  
+Está preparada para trabajar con serialización XML mediante atributos como "XmlRoot", "XmlType", "XmlElement" y "XmlIgnore".
+
+*Validador
+
+Centraliza las validaciones necesarias antes de registrar, actualizar o eliminar estudiantes.
+
+Incluye:
+- Validación de campos obligatorios.
+- Validación de formato de correo electrónico.
+- Validación de carné único.
+- Validación de existencia de estudiante antes de actualizar o eliminar.
+- Validación de caracteres compatibles con XML.
+
+*Motivo del aporte
+
+Estas clases se realizaron primero porque son necesarias para construir correctamente el menú de consola y conectar luego con el manejo de archivos XML.
