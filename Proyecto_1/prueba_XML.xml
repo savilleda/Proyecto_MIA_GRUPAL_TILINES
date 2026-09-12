@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<estudiantes>
+  <estudiante>
+    <carne>1500124</carne>
+    <nombres>Juan Pedro</nombres>
+    <apellidos>Pérez Gómez</apellidos>
+    <carrera>Ingeniería en Informática y Sistemas</carrera>
+    <correo>jperez@correo.url.edu.gt</correo>
+  </estudiante>
+  <estudiante>
+    <carne>1500224</carne>
+    <nombres>Maria Fernanda</nombres>
+    <apellidos>López Morales</apellidos>
+    <carrera>Ingeniería en Informática y Sistemas</carrera>
+    <correo>mflopez@correo.url.edu.gt</correo>
+  </estudiante>
+  <estudiante>
+    <carne>1500324</carne>
+    <nombres>Carlos Eduardo</nombres>
+    <apellidos>Rodríguez Castillo</apellidos>
+    <carrera>Ingeniería Industrial</carrera>
+    <correo>crodriguez@correo.url.edu.gt</correo>
+  </estudiante>
+  <estudiante>
+    <carne>1500424</carne>
+    <nombres>Ana Lucía</nombres>
+    <apellidos>Martínez Estrada</apellidos>
+    <carrera>Ingeniería Civil</carrera>
+    <correo>amartinez@correo.url.edu.gt</correo>
+  </estudiante>
+</estudiantes>
