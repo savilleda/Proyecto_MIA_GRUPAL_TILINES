@@ -1,4 +1,7 @@
-﻿namespace GestionEstudiantes
+﻿using System;
+using System.Collections.Generic;
+
+namespace GestionEstudiantes
 {
     class Program
     {
@@ -35,22 +38,38 @@
                 Console.WriteLine("\nNo se encontraron estudiantes o el archivo no existe.");
             }
 
-            // Prueba de búsqueda por carné
-            Console.Write("\nIngrese un carné para probar la búsqueda: ");
-            string carneBusqueda = Console.ReadLine() ?? string.Empty;
+            // Bandera que controla si el usuario quiere seguir buscando estudiantes
+            bool seguirBuscando = true;
 
-            // Utiliza una expresión Lambda mediante el método Find para buscar el registro coincidente.
-            // Se realiza la comparación ignorando mayúsculas, minúsculas y espacios innecesarios.
-            Estudiante? encontrado = estudiantes.Find(e => e.Carne.Equals(carneBusqueda.Trim(), StringComparison.OrdinalIgnoreCase));
+            // Se repite la búsqueda mientras el usuario quiera seguir probando
+            while (seguirBuscando)
+            {
+                // Prueba de búsqueda por carné
+                Console.Write("\nIngrese un carné para probar la búsqueda: ");
+                string carneBusqueda = Console.ReadLine() ?? string.Empty;
 
-            if (encontrado != null)
-            {
-                Console.WriteLine($"\nEstudiante encontrado exitosamente: {encontrado.NombreCompleto} - {encontrado.Carrera}");
+                // Utiliza una expresión Lambda mediante el método Find para buscar el registro coincidente.
+                // Se realiza la comparación ignorando mayúsculas, minúsculas y espacios innecesarios.
+                Estudiante? encontrado = estudiantes.Find(e => e.Carne.Equals(carneBusqueda.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (encontrado != null)
+                {
+                    Console.WriteLine($"\nEstudiante encontrado exitosamente: {encontrado.NombreCompleto} - {encontrado.Carrera}");
+                }
+                else
+                {
+                    Console.WriteLine("\nError. No se encontró ningún estudiante con ese carné.");
+                }
+
+                // Pregunta si el usuario desea repetir la búsqueda
+                Console.Write("\n¿Desea buscar a otro estudiante? (S/N): ");
+                string respuesta = Console.ReadLine() ?? string.Empty;
+
+                // Solo continúa el bucle si la respuesta empieza con "S" (sí)
+                seguirBuscando = respuesta.Trim().StartsWith("S", StringComparison.OrdinalIgnoreCase);
             }
-            else
-            {
-                Console.WriteLine("\nError. No se encontró ningún estudiante con ese carné.");
-            }
+
+            Console.WriteLine("\nFin de las búsquedas.");
         }
     }
 }
