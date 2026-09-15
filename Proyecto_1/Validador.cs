@@ -103,6 +103,23 @@ namespace GestionEstudiantes
             return errores;
         }
 
+         //Valida que el estudiante exista antes de intentar buscarlo
+         //Sigue la misma lógica que ValidarEliminacion, ya que buscar
+         //y eliminar comparten la misma regla: el carné debe existir
+         public static List<string> ValidarBusqueda(
+            string carne,
+            IEnumerable<Estudiante> estudiantes)
+        {
+            //Comprueba que la colección no sea nula
+            ComprobarColeccion(estudiantes);
+            //Crea la lista donde se guardarán los errores
+            var errores = new List<string>();
+            //revisa que se haya indicado un carné y que esté registrado
+            ValidarExistencia(carne, estudiantes, errores);
+            //Devuelve la lista con los resultados de la validación
+            return errores;
+        }
+
         //Revisa si son el mismo carné, ignorando mayúsculas y espacios al inicio o final
         public static bool SonElMismoCarne(string primero, string segundo)
         {
