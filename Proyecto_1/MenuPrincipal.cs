@@ -1,28 +1,27 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-
 //todo: revisar lineas no. 127, 240 :) -MD
 
 namespace GestionEstudiantes
 {
     public class MenuPrincipal
     {
-        //Todo inicia con los estudiantes disponibles en el sistema
-        private readonly List<Estudiante> estudiantes;
+        // El menú delega las operaciones del sistema a esta clase.
+        private readonly OperacionesEstudiante operaciones;
 
-        //Para inicializar el menu, el constructor depende de la lista de estudiantes
-        public MenuPrincipal(List<Estudiante> estudiantes)
+        // Recibimos las operaciones ya configuradas para trabajar con los estudiantes.
+        public MenuPrincipal(OperacionesEstudiante operaciones)
         {
-            //Si lalita de estudiantes viene nula
-            if(estudiantes == null)
+            // Evitamos iniciar el menú sin la lógica necesaria.
+            if (operaciones == null)
             {
-                //Se muestra al usuario porque la accion es invalida
-                throw new ArgumentNullException(nameof(estudiantes), "La lista de estudiantes no puede estar vacia.");
+                throw new ArgumentNullException(
+                    nameof(operaciones),
+                    "Las operaciones del sistema no pueden ser nulas."
+                );
             }
-            
-            //De lo contrario, se asigna la lista de estudiantes al campo privado del menu
-            this.estudiantes = estudiantes;
+
+            this.operaciones = operaciones;
         }
 
         //Ejecutrar mantiene el programa funcionando hasta que el usuario desee salir
@@ -102,95 +101,93 @@ namespace GestionEstudiantes
         }
 
         //Registrar estudiante permite al usuario ingresar los datos de un nuevo estudiante y agregarlo a la lista
+        // Solicita los datos y delega el registro del estudiante.
         private void RegistrarEstudiante()
         {
-            Console.WriteLine("=== REGISTRO DE ESTUDIANTE ===");
+            Console.WriteLine("=== REGISTRO DE ESTUDIANTE ===\n");
 
-            //Declaramos un nuevo estudiante y leemos sus datos
+            // Obtenemos los datos ingresados por el usuario.
             Estudiante nuevoEstudiante = LeerDatosEstudiante();
 
-            //Para mejorar la experiencia y el funcionamineto del sistema, listamos cualquier error que pueda ocurrir
-            List<string> errores =
-                Validador.ValidarRegistro(nuevoEstudiante, estudiantes);
+            // OperacionesEstudiante se encarga de validar y guardar.
+            var resultado =
+                operaciones.RegistrarEstudiante(nuevoEstudiante);
 
-            //Si hay errores, los mostramos al usuario
-            if(errores.Count > 0)
+            // Si ocurrió algún problema, mostramos los errores recibidos.
+            if (!resultado.exito)
             {
-                MostrarErrores(errores);
+                MostrarErrores(resultado.errores);
                 return;
             }
 
-            //Si no hay errores, agregamos el estudiante a la lista
-            estudiantes.Add(nuevoEstudiante);
             Console.WriteLine("\nEstudiante registrado exitosamente.");
-
-            //====== Luego del regitro, mas adelante, llamaremos al metodo que guarde y encripte la informaciomn el archivo XML.
         }
 
-        //Busca de estudiantes por su ID
+        // Busca un estudiante utilizando su carné como identificador.
         private void BuscarEstudiante()
         {
-            Console.WriteLine("=== BUSQEUDA DE ESTUDIANTE ===\n");
+            Console.WriteLine("=== BÚSQUEDA DE ESTUDIANTE ===\n");
 
-            //Pedimos al usuario que ingrese el carnet del estudiante (ID)
-            Console.Write("Ingrese el no. de carnet del estudiante que desea buscar: ");
-            //Guardamos el ingreso del usuario, prevenimos que sea nulo y eliminamos espacios en blanco al inicio y al final
-            string carnet = (Console.ReadLine() ?? string.Empty).Trim();
+            Console.Write("Ingrese el carné del estudiante: ");
+            string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            //Si el carne es nulo o vacio (que el usuarion no ingrese nada jaja :D)
-            if (string.IsNullOrEmpty(carnet))
+            // La búsqueda se realiza desde OperacionesEstudiante.
+            var resultado =
+                operaciones.BuscarEstudiantePorCarne(carne);
+
+            // Si no se encontró o hubo un error, mostramos el mensaje recibido.
+            if (!resultado.encontrado)
             {
-                Console.WriteLine("\nDebe ingresar un carnet valido para realiar la busqueda.");
+                MostrarErrores(resultado.errores);
                 return;
             }
 
-            //Buscamos el estudiante en la lista
-            //Verificamos que el estudiante no sea nulo y que el carnet ingresado por el usuario sea exactamente el mismo que el del estudiante
-            Estudiante estudiante = estudiantes.FirstOrDefault(e => e != null && Validador.SonElMismoCarne(e.Carne, carnet));
-
-
-            //Si por cualquier razon el estudiante es nulo, indicamos al usuario que no se ha encontrado a ningun estudiante con el carnet especificado
-            if(estudiante == null)
+            if (resultado.estudiante == null)
             {
-                Console.WriteLine($"\nNo se ha encontrado ningun estudiante con el carnet: {carnet}");
+                Console.WriteLine("\nNo se encontró el estudiante.");
+                return;
             }
-            
-            //Ya de ultimo, si en efecto existe, le mostramos al usuario la informacion del estudiante
+
             Console.WriteLine("\nEstudiante encontrado:");
-            MostrarEstudiante(estudiante);
+            MostrarEstudiante(resultado.estudiante);
         }
 
         //Modificacion de la informacion de un estudiante existe
+        // Permite modificar la información de un estudiante existente.
         private void ModificarEstudiante()
         {
             Console.WriteLine("=== MODIFICACIÓN DE ESTUDIANTE ===\n");
 
-            //Pedimos al usuario que ingrese el carnet del estudiante que desea modificar
             Console.Write("Ingrese el carné del estudiante: ");
-            //Guardamos el ingreso del usuario, prevenimos que sea nulo y eliminamos espacios en blanco al inicio y al final
             string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            //Si el carne es nulo o vacio (que el usuarion no ingrese nada jaja :D)
-            Estudiante estudianteActual = estudiantes.FirstOrDefault(
-                e => e != null &&
-                Validador.SonElMismoCarne(e.Carne, carne)
-            );
+            // Primero buscamos al estudiante para obtener sus datos actuales.
+            var busqueda =
+                operaciones.BuscarEstudiantePorCarne(carne);
 
-            //Si el estudiante no se encuentra, mostramos un mensaje de error y salimos del metodo
-            if (estudianteActual == null)
+            if (!busqueda.encontrado)
             {
-                Console.WriteLine("\nNo se encontró un estudiante con ese carné.");
+                MostrarErrores(busqueda.errores);
                 return;
             }
 
-            // De lo contrario, mostramos los datos actuales del estudiante y pedimos al usuario que ingrese los nuevos datos
+            if (busqueda.estudiante == null)
+            {
+                Console.WriteLine("\nNo se encontró el estudiante.");
+                return;
+            }
+
+            Estudiante estudianteActual = busqueda.estudiante;
+
             Console.WriteLine("\nDatos actuales:");
             MostrarEstudiante(estudianteActual);
 
             Console.WriteLine("\nIngrese los nuevos datos.");
-            Console.WriteLine("Presione ENTER para conservar el valor actual.\n");
+            Console.WriteLine(
+                "Presione ENTER para conservar el valor actual.\n"
+            );
 
-            // Leemos los nuevos valores, permitiendo al usuario mantener los valores actuales si lo desea
+            // Si se deja un campo vacío, mantenemos el valor anterior.
             string nombres =
                 LeerValorActual("Nombres", estudianteActual.Nombres);
 
@@ -203,78 +200,66 @@ namespace GestionEstudiantes
             string correo =
                 LeerValorActual("Correo", estudianteActual.Correo);
 
-            // El carné original se mantiene porque funciona
-            // como identificador único del estudiante
-            Estudiante estudianteModificado = new Estudiante(
-                estudianteActual.Carne,
-                nombres,
-                apellidos,
-                carrera,
-                correo
-            );
-
-            // Listamos los errores si los hay
-            List<string> errores =
-                Validador.ValidarActualizacion(
+            // El carné se conserva porque funciona como identificador único.
+            Estudiante estudianteModificado =
+                new Estudiante(
                     estudianteActual.Carne,
-                    estudianteModificado,
-                    estudiantes
+                    nombres,
+                    apellidos,
+                    carrera,
+                    correo
                 );
-            
-            //Si hay errores, los mostramos al usuario y salimos del método -> asi el usuario puede corregirlos y volver a intentarlo.
-            if (errores.Count > 0)
+
+            // La actualización y persistencia se delegan a OperacionesEstudiante.
+            var resultado =
+                operaciones.ActualizarEstudiante(
+                    estudianteActual.Carne,
+                    estudianteModificado
+                );
+
+            if (!resultado.exito)
             {
-                MostrarErrores(errores);
+                MostrarErrores(resultado.errores);
                 return;
             }
 
-
-            //Seteamos los nuevos valores al estudiante actual
-            estudianteActual.Nombres = estudianteModificado.Nombres;
-            estudianteActual.Apellidos = estudianteModificado.Apellidos;
-            estudianteActual.Carrera = estudianteModificado.Carrera;
-            estudianteActual.Correo = estudianteModificado.Correo;
-
-            Console.WriteLine("\nEstudiante modificado correctamente.");
-
-            // =========== Aquí se guardarán posteriormente los cambios en el XML.
+            Console.WriteLine(
+                "\nEstudiante modificado correctamente."
+            );
         }
 
         // Elimina un estudiante después de comprobar que exista
+        // Busca al estudiante y solicita confirmación antes de eliminarlo.
         private void EliminarEstudiante()
         {
             Console.WriteLine("=== ELIMINACIÓN DE ESTUDIANTE ===\n");
 
-            // Pedimos al usuario que ingrese el carné del estudiante que desea eliminar
             Console.Write("Ingrese el carné del estudiante: ");
-            // Guardamos el ingreso del usuario, prevenimos que sea nulo y eliminamos espacios en blanco al inicio y al final
             string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            //Listamos los errores si los hay
-            List<string> errores =
-                Validador.ValidarEliminacion(carne, estudiantes);
+            // Primero buscamos al estudiante para mostrar sus datos.
+            var busqueda =
+                operaciones.BuscarEstudiantePorCarne(carne);
 
-            //Si en efecto hay errores, los mostramos al usuario y salimos del método -> asi el usuario puede corregirlos y volver a intentarlo.
-            if (errores.Count > 0)
+            if (!busqueda.encontrado)
             {
-                MostrarErrores(errores);
+                MostrarErrores(busqueda.errores);
                 return;
             }
 
-            //Ya validada la existencia del estudiante, procedemos a buscarlo en la lista
-            Estudiante estudiante = estudiantes.First(
-                e => e != null &&
-                Validador.SonElMismoCarne(e.Carne, carne)
+            if (busqueda.estudiante == null)
+            {
+                Console.WriteLine("\nNo se encontró el estudiante.");
+                return;
+            }
+
+            Console.WriteLine("\nEstudiante encontrado:\n");
+            MostrarEstudiante(busqueda.estudiante);
+
+            Console.Write(
+                "\n¿Desea eliminar este estudiante? (S/N): "
             );
 
-            //cuando lo encontremos, se lo indicamos al usuario y le pedimos confirmación antes de eliminarlo
-            Console.WriteLine("\nEstudiante encontrado:\n");
-
-            MostrarEstudiante(estudiante);
-
-            Console.Write("\n¿Desea eliminar este estudiante? (S/N): ");
-
-            //Leemos la confirmación del usuario, prevenimos que sea nula, eliminamos espacios en blanco al inicio y al final, y convertimos a mayúsculas para facilitar la comparación
             string confirmacion =
                 (Console.ReadLine() ?? string.Empty)
                 .Trim()
@@ -285,42 +270,56 @@ namespace GestionEstudiantes
                 Console.WriteLine("\nEliminación cancelada.");
                 return;
             }
-            
-            //Si el usuario confirma, eliminamos el estudiante de la lista
-            estudiantes.Remove(estudiante);
-             
-            //Informamos al usuario que la eliminación fue exitosa
-            Console.WriteLine("\nEstudiante eliminado correctamente.");
 
-            // Aquí se actualizará posteriormente el archivo XML.
+            // La eliminación y actualización del archivo se hacen
+            // desde OperacionesEstudiante.
+            var resultado =
+                operaciones.EliminarEstudiante(carne);
+
+            if (!resultado.exito)
+            {
+                MostrarErrores(resultado.errores);
+                return;
+            }
+
+            Console.WriteLine(
+                "\nEstudiante eliminado correctamente."
+            );
         }
 
 
-        // Muestra todos los estudiantes registrados
+        // Obtiene y muestra todos los estudiantes registrados.
         private void ListarEstudiantes()
         {
             Console.WriteLine("=== LISTADO DE ESTUDIANTES ===\n");
 
-            //Si la lista de estudiantes está vacía, informamos al usuario y salimos del método -> no habrian estudiantes que mostrar
+            // La lista se obtiene directamente desde la persistencia.
+            List<Estudiante> estudiantes =
+                operaciones.ListarEstudiantes();
+
             if (estudiantes.Count == 0)
             {
-                Console.WriteLine("No existen estudiantes registrados.");
+                Console.WriteLine(
+                    "No existen estudiantes registrados."
+                );
+
                 return;
             }
-            
 
-            // Mostramos el total de estudiantes registrados
             Console.WriteLine(
                 "Total de estudiantes: " + estudiantes.Count
             );
 
             Console.WriteLine();
 
-            // Recorremos la lista de estudiantes y mostramos la información de cada uno
+            // Mostramos cada estudiante recuperado.
             foreach (Estudiante estudiante in estudiantes)
             {
                 MostrarEstudiante(estudiante);
-                Console.WriteLine("------------------------------------------");
+
+                Console.WriteLine(
+                    "------------------------------------------"
+                );
             }
         }
 
