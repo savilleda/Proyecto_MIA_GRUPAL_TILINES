@@ -58,7 +58,7 @@ namespace GestionEstudiantes
                         break;
 
                     case "3":
-                        MoificarEstudiante();
+                        ModificarEstudiante();
                         break;
                     
                     case "4":
@@ -135,10 +135,10 @@ namespace GestionEstudiantes
             //Pedimos al usuario que ingrese el carnet del estudiante (ID)
             Console.Write("Ingrese el no. de carnet del estudiante que desea buscar: ");
             //Guardamos el ingreso del usuario, prevenimos que sea nulo y eliminamos espacios en blanco al inicio y al final
-            string carnet = (Console.ReadLine() ?? string.empty).Trim();
+            string carnet = (Console.ReadLine() ?? string.Empty).Trim();
 
             //Si el carne es nulo o vacio (que el usuarion no ingrese nada jaja :D)
-            if (string.IsNillOrEmpty(carnet))
+            if (string.IsNullOrEmpty(carnet))
             {
                 Console.WriteLine("\nDebe ingresar un carnet valido para realiar la busqueda.");
                 return;
@@ -146,7 +146,7 @@ namespace GestionEstudiantes
 
             //Buscamos el estudiante en la lista
             //Verificamos que el estudiante no sea nulo y que el carnet ingresado por el usuario sea exactamente el mismo que el del estudiante
-            Estudiante estudiante = estudiantes.FirstOrDefault(e => e != null && Validador.SonElMismoCarne(e.Carnet, carnet));
+            Estudiante estudiante = estudiantes.FirstOrDefault(e => e != null && Validador.SonElMismoCarne(e.Carne, carnet));
 
 
             //Si por cualquier razon el estudiante es nulo, indicamos al usuario que no se ha encontrado a ningun estudiante con el carnet especificado
