@@ -80,5 +80,35 @@ namespace GestionEstudiantes
  
             return (true, errores);
         }
+
+        // Registra un nuevo estudiante en el sistema.
+        // nuevoEstudiante: objeto con los datos del estudiante a registrar
+        // Devuelve una tupla: si la operación tuvo éxito y la lista de errores encontrados (vacía si todo salió bien)
+        public (bool exito, List<string> errores) RegistrarEstudiante(Estudiante nuevoEstudiante)
+        {
+            // Carga la lista completa, ya que se necesita para validar duplicados y luego reescribir el archivo
+            List<Estudiante> estudiantes = manejador.LeerEstudiantes();
+
+            // Valida los datos del nuevo estudiante y que el carné no esté ya en uso (regla de Marco)
+            List<string> errores = Validador.ValidarRegistro(nuevoEstudiante, estudiantes);
+            if (errores.Count > 0)
+            {
+                // Si hay errores de validación, no se continúa con la operación
+                return (false, errores);
+            }
+
+            // Agrega el nuevo estudiante a la lista en memoria
+            estudiantes.Add(nuevoEstudiante);
+
+            // Persiste la lista completa (con el nuevo estudiante) en el archivo XML
+            bool guardadoExitoso = manejador.GuardarEstudiantes(estudiantes);
+            if (!guardadoExitoso)
+            {
+                errores.Add("Ocurrió un error al guardar los cambios en el archivo XML");
+                return (false, errores);
+            }
+
+            return (true, errores);
+        }
     }
 }
