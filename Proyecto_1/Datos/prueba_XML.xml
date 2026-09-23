@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<estudiantes>
+<estudiantes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <estudiante>
     <carne>1500124</carne>
     <nombres>Juan Pedro</nombres>
@@ -27,5 +27,12 @@
     <apellidos>Martínez Estrada</apellidos>
     <carrera>Ingeniería Civil</carrera>
     <correo>amartinez@correo.url.edu.gt</correo>
+  </estudiante>
+  <estudiante>
+    <carne>1032625</carne>
+    <nombres>Sebastian Alexander</nombres>
+    <apellidos>Villeda Reyna</apellidos>
+    <carrera>Ingeniería en Informática y Sistemas</carrera>
+    <correo>savilleda@correo.url.edu.gt</correo>
   </estudiante>
 </estudiantes>

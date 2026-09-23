@@ -9,3 +9,9 @@ obj/
 
 # Rider / IntelliJ
 .idea/
+
+# Datos generados durante la ejecución
+Datos/*.aes
+Datos/*.tmp
+Datos/*.bak
+Datos/*.backup

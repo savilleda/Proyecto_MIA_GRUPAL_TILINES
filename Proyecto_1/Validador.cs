@@ -34,6 +34,8 @@ namespace GestionEstudiantes
             ValidarTextoObligatorio(estudiante.Nombres, "Los nombres", errores);
             //Revisa que los apellidos tengan contenido valido
             ValidarTextoObligatorio(estudiante.Apellidos, "Los apellidos", errores);
+            //La carrera es obligatoria para completar el registro académico
+            ValidarTextoObligatorio(estudiante.Carrera, "La carrera", errores);
             //Revisa que el correo tenga contenido valido
             ValidarTextoObligatorio(estudiante.Correo, "El correo", errores);
             //Este if revisa que el correo tenga contenido y que su formato sea válido

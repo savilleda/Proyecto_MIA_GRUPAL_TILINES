@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace GestionEstudiantes
@@ -8,6 +10,9 @@ namespace GestionEstudiantes
     public class ManejadorXML
     {
         private readonly string rutaArchivo;
+        public bool UltimaLecturaExitosa { get; private set; } = true;
+        public string UltimoErrorLectura { get; private set; } = string.Empty;
+        public List<string> UltimosErroresLectura { get; } = new List<string>();
 
         // Constructor que recibe la ruta donde se guardará y leerá el XML
         public ManejadorXML(string rutaArchivo)
@@ -39,6 +44,9 @@ namespace GestionEstudiantes
             // Validamos la existencia del archivo antes de intentar leer
             if (!File.Exists(rutaArchivo))
             {
+                UltimaLecturaExitosa = true;
+                UltimoErrorLectura = string.Empty;
+                UltimosErroresLectura.Clear();
                 return new List<Estudiante>();
             }
             
@@ -54,21 +62,77 @@ namespace GestionEstudiantes
 
                     // Retorna la lista de estudiantes contenida en el XML.
                     // Si el contenedor o la lista fueran nulos, se retorna una lista vacía por seguridad (null-coalescing).
-                    return contenedor?.Estudiantes ?? new List<Estudiante>();
+                    List<Estudiante> estudiantes = contenedor?.Estudiantes ?? new List<Estudiante>();
+                    List<string> errores = ValidarEstudiantesCargados(estudiantes);
+
+                    UltimosErroresLectura.Clear();
+                    UltimosErroresLectura.AddRange(errores);
+                    UltimaLecturaExitosa = errores.Count == 0;
+                    UltimoErrorLectura = errores.Count == 0
+                        ? string.Empty
+                        : "El XML contiene datos inválidos:\n- " + string.Join("\n- ", errores);
+
+                    if (!UltimaLecturaExitosa)
+                    {
+                        Console.WriteLine(UltimoErrorLectura);
+                    }
+
+                    return estudiantes;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is InvalidOperationException || ex is IOException ||
+                                       ex is UnauthorizedAccessException || ex is XmlException)
             {
-                // En caso de que el archivo XML esté corrupto, mal formado o con permisos restringidos,
-                // se captura la excepción, se informa en consola y se retorna una lista vacía de forma segura.
-                Console.WriteLine($"Error al leer el archivo XML: {ex.Message}");
+                // Un XML dañado no se interpreta como una lista vacía: así se evita
+                // que una operación posterior sobrescriba los datos originales.
+                UltimaLecturaExitosa = false;
+                UltimoErrorLectura = $"No se pudo leer el archivo XML: {ex.Message}";
+                UltimosErroresLectura.Clear();
+                UltimosErroresLectura.Add(UltimoErrorLectura);
+                Console.WriteLine(UltimoErrorLectura);
                 return new List<Estudiante>();
             }
+        }
+
+        private static List<string> ValidarEstudiantesCargados(List<Estudiante> estudiantes)
+        {
+            List<string> errores = new List<string>();
+
+            for (int i = 0; i < estudiantes.Count; i++)
+            {
+                Estudiante? estudiante = estudiantes[i];
+                if (estudiante == null)
+                {
+                    errores.Add($"El registro {i + 1} está vacío");
+                    continue;
+                }
+
+                List<string> erroresDatos = Validador.ValidarDatos(estudiante);
+                foreach (string error in erroresDatos)
+                {
+                    errores.Add($"Registro {i + 1}: {error}");
+                }
+
+                if (estudiantes.Take(i).Any(anterior =>
+                    anterior != null &&
+                    Validador.SonElMismoCarne(anterior.Carne, estudiante.Carne)))
+                {
+                    errores.Add($"Registro {i + 1}: el carné '{estudiante.Carne}' está duplicado");
+                }
+            }
+
+            return errores;
         }
 
         /// Serializa y guarda la lista completa de estudiantes en el archivo XML.
         public bool GuardarEstudiantes(List<Estudiante> lista)
         {
+            if (lista == null)
+            {
+                Console.WriteLine("No se puede guardar una lista nula de estudiantes.");
+                return false;
+            }
+
             try
             {
                 // 1. Manejo de directorios y rutas:
@@ -93,9 +157,24 @@ namespace GestionEstudiantes
                 // 4. Escritura en el archivo:
                 // La instrucción 'using' garantiza que el recurso (StreamWriter) se cierre y libere correctamente 
                 // incluso si ocurre un fallo durante la escritura.
-                using (StreamWriter writer = new StreamWriter(rutaArchivo))
+                // Se escribe primero en un archivo temporal y se reemplaza el original
+                // solo cuando la serialización termina correctamente.
+                string rutaTemporal = rutaArchivo + ".tmp";
+                try
                 {
-                    serializer.Serialize(writer, contenedor);
+                    using (StreamWriter writer = new StreamWriter(rutaTemporal, false))
+                    {
+                        serializer.Serialize(writer, contenedor);
+                    }
+
+                    File.Move(rutaTemporal, rutaArchivo, true);
+                }
+                finally
+                {
+                    if (File.Exists(rutaTemporal))
+                    {
+                        File.Delete(rutaTemporal);
+                    }
                 }
 
                 // Si no ocurrió ninguna excepción, se confirma que la persistencia fue exitosa.
@@ -103,7 +182,6 @@ namespace GestionEstudiantes
             }
             catch (Exception ex)
             {
-                // Manejo de errores requerido por el proyecto
                 Console.WriteLine($"Error al guardar el archivo XML: {ex.Message}");
                 return false;
             }
