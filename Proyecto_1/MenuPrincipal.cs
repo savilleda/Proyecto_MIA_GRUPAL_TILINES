@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-//todo: revisar lineas no. 127, 240 :) -MD
 
 namespace GestionEstudiantes
 {
