@@ -1,0 +1,15 @@
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\bin\Debug\net9.0\Proyecto_1.exe
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\bin\Debug\net9.0\Proyecto_1.deps.json
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\bin\Debug\net9.0\Proyecto_1.runtimeconfig.json
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\bin\Debug\net9.0\Proyecto_1.dll
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\bin\Debug\net9.0\Proyecto_1.pdb
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.GeneratedMSBuildEditorConfig.editorconfig
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.AssemblyInfoInputs.cache
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.AssemblyInfo.cs
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.csproj.CoreCompileInputs.cache
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.sourcelink.json
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.dll
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\refint\Proyecto_1.dll
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.pdb
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\Proyecto_1.genruntimeconfig.cache
+C:\proyecto_MIA_tilines\Proyecto_MIA_GRUPAL_TILINES\Proyecto_1\obj\Debug\net9.0\ref\Proyecto_1.dll
