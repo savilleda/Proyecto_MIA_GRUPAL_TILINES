@@ -202,9 +202,17 @@ namespace GestionEstudiantes
                 errores.Add(campo + ": contiene caracteres no permitidos en XML");
             }
         }
+
         //Verifica si el correo tiene un formato válido
-        private static bool EsCorreoValido(string correo)
+        public static bool EsCorreoValido(string correo)
         {
+            //Verificamos que no venga vacio o contenga espacios
+            if (string.IsNullOrWhiteSpace(correo))
+            {
+                return false;
+            }
+           
+           
             //Quita espacios al inicio y final del correo
             string texto = correo.Trim();
             //Si el correo está vacío, no es válido

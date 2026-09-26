@@ -2,56 +2,84 @@ using System;
 using System.IO;
 using System.Text;
 
+
+/*El cambio en esta clase nace de la curiosidad de poder ejecutar el .exe 
+para que el mismo cree sus necesidades en cualquier entorno. Sin la necesidad de estar 
+en la carpeta(s) del programa.
+*/
 namespace GestionEstudiantes
 {
     public static class ConfiguracionDatos
     {
-        private const string NombreArchivoXml = "prueba_XML.xml";
-        private const string VariableRutaPruebas = "GESTION_ESTUDIANTES_DATOS";
+        // Nombre del archivo XML principal del sistema.
+        private const string NOMBRE_XML = "prueba_XML.xml";
 
-        // Obtiene la carpeta Datos o la carpeta indicada explícitamente para pruebas
-        public static string ObtenerDirectorioDatos()
+        // Carpeta donde la aplicación almacenará sus archivos.
+        public static string CarpetaDatos { get; private set; } = string.Empty;
+
+
+        // Prepara la carpeta de datos del programa.
+        public static void PrepararUbicacionDatos()
         {
-            string? rutaPruebas = Environment.GetEnvironmentVariable(VariableRutaPruebas);
-            string directorio = string.IsNullOrWhiteSpace(rutaPruebas)
-                ? Path.Combine(EncontrarCarpetaProyecto(), "Datos")
-                : rutaPruebas;
+            // El script de inicio puede indicar una carpeta de datos concreta.
+            // Si la aplicación se abre directamente, usamos AppData como respaldo.
+            string? carpetaConfigurada = Environment.GetEnvironmentVariable(
+                "GESTION_ESTUDIANTES_DATOS"
+            );
 
-            Directory.CreateDirectory(directorio);
-            return directorio;
+            if (!string.IsNullOrWhiteSpace(carpetaConfigurada))
+            {
+                CarpetaDatos = Path.GetFullPath(carpetaConfigurada);
+            }
+            else
+            {
+                string appData = Environment.GetFolderPath(
+                    Environment.SpecialFolder.LocalApplicationData
+                );
+
+                CarpetaDatos = Path.Combine(
+                    appData,
+                    "GestionEstudiantes",
+                    "Datos"
+                );
+            }
+
+            // Si la carpeta todavía no existe, la creamos y la indicamos.
+            //Si ya existe, lo indicamos.
+            if (Directory.Exists(CarpetaDatos))
+            {
+                Console.WriteLine("La carpeta de datos ya existe:");
+            }
+            else
+            {
+                Directory.CreateDirectory(CarpetaDatos);
+                Console.WriteLine("Carpeta de datos creada:");
+            }
+
+            Console.WriteLine(CarpetaDatos);
+            Console.WriteLine();
+
+            // Conservamos la variable para las clases que ya la utilizan.
+            Environment.SetEnvironmentVariable(
+                "GESTION_ESTUDIANTES_DATOS",
+                CarpetaDatos,
+                EnvironmentVariableTarget.Process
+            );
         }
 
-        // Devuelve el XML activo sin migrar ni reemplazar datos automáticamente
+                // Devuelve la ruta completa del XML principal.
         public static string PrepararRutaXml()
         {
-            string rutaXml = Path.Combine(ObtenerDirectorioDatos(), NombreArchivoXml);
-            if (!File.Exists(rutaXml))
+            // Si todavía no hemos preparado la carpeta, lo hacemos ahora.
+            if (string.IsNullOrWhiteSpace(CarpetaDatos))
             {
-                File.WriteAllText(
-                    rutaXml,
-                    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<estudiantes />",
-                    new UTF8Encoding(false));
+                PrepararUbicacionDatos();
             }
 
-            return rutaXml;
-        }
-
-        // Busca Proyecto_1.csproj desde la carpeta del ejecutable hacia arriba
-        private static string EncontrarCarpetaProyecto()
-        {
-            DirectoryInfo? carpeta = new DirectoryInfo(AppContext.BaseDirectory);
-            while (carpeta != null)
-            {
-                if (File.Exists(Path.Combine(carpeta.FullName, "Proyecto_1.csproj")))
-                {
-                    return carpeta.FullName;
-                }
-
-                carpeta = carpeta.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                "No se encontró Proyecto_1.csproj desde la ubicación del ejecutable");
+            return Path.Combine(
+                CarpetaDatos,
+                NOMBRE_XML
+            );
         }
     }
 }
