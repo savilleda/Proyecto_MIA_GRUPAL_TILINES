@@ -4,7 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 
 /*DE MARCO: elimine cifrar y descfifrar de la clase. Ahora se ejecutan automaticamente, no con opcion al usuario. 
-Esto para menetener la idea de la seguridad de los datos y mantener un proyecto mas limpio :)
+Esto para mantener la idea de la seguridad de los datos y mantener un proyecto mas limpio :)
 */
 
 namespace GestionEstudiantes
@@ -18,7 +18,7 @@ namespace GestionEstudiantes
         {
             try
             {
-                Console.Title = "Sistema de Gestion de Estudiantes";
+                Console.Title = "Sistema de Gestión de Estudiantes";
 
                 //Preparamos la carpeta y devolvemos la ruta completa
                 string rutaArchivo = ConfiguracionDatos.PrepararRutaXml();
@@ -31,7 +31,7 @@ namespace GestionEstudiantes
                 //Si no existe el archivo
                 if (!archivoExiste)
                 {
-                    Console.WriteLine("Primera ejecucion: se creara un archivo sinn estudiantes.");
+                    Console.WriteLine("Primera ejecución: se creará un archivo sin estudiantes.");
                         Console.WriteLine(
                     "Cree una contraseña para proteger sus datos."
                     );
@@ -198,7 +198,7 @@ namespace GestionEstudiantes
                 MostrarMenu();
 
                 //Damos las instrucciones de seleccion de opcion
-                Console.Write("Seleccione una opcion: ");
+                Console.Write("Seleccione una opción: ");
                 //Leemos la opsion del usuario, prevenimos que sea nula y eliminamos espacios en blanco al inicio y al final
                 string? entrada = Console.ReadLine();
 
@@ -241,7 +241,7 @@ namespace GestionEstudiantes
                         break;
                     
                     default:
-                        Console.WriteLine("Opcion invalida. Por favor, seleccione una opcion valida.");
+                        Console.WriteLine("Opción inválida. Por favor, seleccione una opción válida.");
                         break;
                 }
 
@@ -257,14 +257,14 @@ namespace GestionEstudiantes
         private void MostrarMenu()
         {
             Console.WriteLine("=============================================");
-            Console.WriteLine("     SISTEMA DE GESTION DE ESTUDIANTES");
+            Console.WriteLine("     SISTEMA DE GESTIÓN DE ESTUDIANTES");
             Console.WriteLine("=============================================");
             Console.WriteLine("1. Registrar estudiante");
-            Console.WriteLine("2. Buscar estudiante por no. de carnet");
+            Console.WriteLine("2. Buscar estudiante por No. de carnet");
             Console.WriteLine("3. Modificar estudiante");
             Console.WriteLine("4. Eliminar estudiante");
             Console.WriteLine("5. Listar estudiantes");
-            Console.WriteLine("6. Cambiar contrasena");
+            Console.WriteLine("6. Cambiar contraseña");
             Console.WriteLine("0. Salir");
             Console.WriteLine("=============================================");
         }
@@ -363,7 +363,7 @@ namespace GestionEstudiantes
 
             while (true)
             {
-                Console.WriteLine("\n1. Nombres\n2. Apellidos\n3. Carrera\n4. Correo\n0. Volver al menú principal");
+                Console.WriteLine("\n1. Nombre(s)\n2. Apellidos\n3. Carrera\n4. Correo\n0. Volver al menú principal");
                 Console.Write("Seleccione el campo: ");
                 string? opcion = Console.ReadLine()?.Trim();
                 if (opcion == null || opcion == "0") return;
@@ -377,7 +377,7 @@ namespace GestionEstudiantes
                     // La copia evita cambiar los datos actuales antes de validar y guardar.
                     var candidato = new Estudiante(estudianteActual.Carne, estudianteActual.Nombres,
                         estudianteActual.Apellidos, estudianteActual.Carrera, estudianteActual.Correo);
-                    string campo = opcion switch { "1" => "Nombres", "2" => "Apellidos", "3" => "Carrera", _ => "Correo" };
+                    string campo = opcion switch { "1" => "Nombre(s)", "2" => "Apellidos", "3" => "Carrera", _ => "Correo" };
                     Console.Write(campo + " (ENTER para cancelar): ");
                     string? valor = Console.ReadLine()?.Trim();
                     if (valor == null) return;
@@ -639,7 +639,7 @@ namespace GestionEstudiantes
                 break; // Carné válido y único
             }
 
-            Console.Write("Nombres: ");
+            Console.Write("Nombre(s): ");
             string nombres = Console.ReadLine() ?? string.Empty;
 
             Console.Write("Apellidos: ");

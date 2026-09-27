@@ -61,7 +61,7 @@ namespace GestionEstudiantes
             {
                 //No deja registrar un estudiante con un carné que ya exista
                 Console.WriteLine("El carné encontrado fue: " + estudiante.Carne +" pero no es único");
-                errores.Add("Ya existe un estudiante con ese carne");
+                errores.Add("Ya existe un estudiante con ese carné");
             }
             //Devuelve los errores de los campos y posible carné duplicado
             if(estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Correo) && 
@@ -313,7 +313,7 @@ namespace GestionEstudiantes
 
                 throw new ArgumentNullException(
                     nameof(estudiantes),
-                    "Debe de dar la coleccion completa de estudiantes cargados"
+                    "Debe de dar la colección completa de estudiantes cargados"
                 );
             }
         }
