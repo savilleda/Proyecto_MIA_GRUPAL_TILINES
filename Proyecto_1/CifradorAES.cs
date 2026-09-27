@@ -14,6 +14,32 @@ namespace GestionEstudiantes
         private const int TamanoEtiqueta = 16;
         private const int Iteraciones = 150_000;
 
+        //Para mejorar el proyecto: comprobamos si los datos comienzan con el encabeado de nuestro mecanismo de cifrado.
+        // Solo nos ayuda a verificar el formato, para que el programa trabaje seguramente sobre algo propio o si tenemos que validar aparte el archivo.
+        public static bool EsArchivoCifrado(byte[] datos)
+        {
+            if (datos == null)
+            {
+                throw new ArgumentNullException(nameof(datos));
+            }
+
+            //Un archivo demasiado corto no es capaz de contener el encabezado.
+            if (datos.Length < Encabezado.Length)
+            {
+                return false;
+            }
+
+            //Comprobamos los primeros bytes con el encabezado esperado
+            return datos.AsSpan(0, Encabezado.Length).SequenceEqual(Encabezado);
+        }
+
+
+
+
+
+
+
+
         // Cifra los datos con AES-GCM y agrega una etiqueta para detectar cambios
         public static byte[] Encriptar(byte[] datos, string contrasena)
         {

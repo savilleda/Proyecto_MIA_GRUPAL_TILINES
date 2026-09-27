@@ -1,17 +1,41 @@
-# Nos ubicamos en la carpeta donde está guardado este script.
-Set-Location -LiteralPath $PSScriptRoot
+[CmdletBinding()]
+param()
 
-# Usamos Datos junto al script para que el XML visible en VS Code sea el activo.
-$env:GESTION_ESTUDIANTES_DATOS = Join-Path $PSScriptRoot "Datos"
+$ErrorActionPreference = "Stop"
+$proyecto = Join-Path $PSScriptRoot "Proyecto_1.csproj"
+$carpetaDatos = Join-Path "C:\" "GestionEstudiantes\Datos"
 
-# Creamos la carpeta si todavía no existe.
-New-Item -ItemType Directory -Path $env:GESTION_ESTUDIANTES_DATOS -Force | Out-Null
+try {
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        throw "No se encontró .NET. Instalá el SDK de .NET 8 o una versión posterior."
+    }
 
-# Abrimos la carpeta para ver el XML y las copias cifradas.
-explorer.exe $env:GESTION_ESTUDIANTES_DATOS
+    if (-not (Test-Path -LiteralPath $proyecto -PathType Leaf)) {
+        throw "No se encontró el archivo del proyecto: $proyecto"
+    }
 
-# Ejecutamos el proyecto.
-dotnet run --project (Join-Path $PSScriptRoot "Proyecto_1.csproj")
+    New-Item -ItemType Directory -Path $carpetaDatos -Force | Out-Null
 
-# Mantenemos la ventana abierta para poder leer cualquier mensaje.
-Read-Host "Presioná ENTER para cerrar"
+    # El programa detecta la carpeta personal y crea el XML al iniciar.
+    $env:GESTION_ESTUDIANTES_DATOS = $carpetaDatos
+
+    Push-Location -LiteralPath $PSScriptRoot
+    try {
+        & dotnet run --project $proyecto
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "El programa terminó con el código de error $LASTEXITCODE."
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+catch {
+    Write-Host ""
+    Write-Host "No se pudo iniciar el programa:" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host ""
+    Read-Host "Presioná ENTER para cerrar"
+    exit 1
+}

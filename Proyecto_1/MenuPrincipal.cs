@@ -3,51 +3,185 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 
+/*DE MARCO: elimine cifrar y descfifrar de la clase. Ahora se ejecutan automaticamente, no con opcion al usuario. 
+Esto para menetener la idea de la seguridad de los datos y mantener un proyecto mas limpio :)
+*/
+
 namespace GestionEstudiantes
 {
     public class MenuPrincipal
     {
         // Punto de entrada de la aplicación. El menú también se encarga de
         // preparar las clases de persistencia y las operaciones del sistema
+        //Aqui tambien se encuentra el main
         public static void Main(string[] args)
         {
-            string rutaArchivo;
             try
             {
-                rutaArchivo = ConfiguracionDatos.PrepararRutaXml();
-            }
-            catch (Exception ex) when (ex is IOException ||
-                                       ex is UnauthorizedAccessException ||
-                                       ex is DirectoryNotFoundException ||
-                                       ex is InvalidOperationException)
-            {
-                Console.WriteLine($"No se pudo preparar la ubicación de datos: {ex.Message}");
-                return;
-            }
+                Console.Title = "Sistema de Gestion de Estudiantes";
 
-            ManejadorXML manejador = new ManejadorXML(rutaArchivo);
-            OperacionesEstudiante operaciones = new OperacionesEstudiante(manejador);
-            MenuPrincipal menu = new MenuPrincipal(operaciones);
-            Console.WriteLine($"Los datos se guardan en: {rutaArchivo}");
-            menu.Ejecutar();
+                //Preparamos la carpeta y devolvemos la ruta completa
+                string rutaArchivo = ConfiguracionDatos.PrepararRutaXml();
+
+                bool archivoExiste = File.Exists(rutaArchivo);
+
+                bool archivoCifrado = archivoExiste && 
+                CifradorAES.EsArchivoCifrado(File.ReadAllBytes(rutaArchivo));
+
+                //Si no existe el archivo
+                if (!archivoExiste)
+                {
+                    Console.WriteLine("Primera ejecucion: se creara un archivo sinn estudiantes.");
+                        Console.WriteLine(
+                    "Cree una contraseña para proteger sus datos."
+                    );
+                }
+                //Si ya existe un archivo cifrado
+                else if (archivoCifrado)
+                {
+                        Console.WriteLine(
+                    "Se encontró un archivo cifrado."
+                    );
+                    Console.WriteLine(
+                    "Ingrese su contraseña para acceder."
+                    );
+                }
+                //Existe un archivo pero no tiene el encabezado de nuestro cifrado.
+                else
+                {
+                    Console.WriteLine(
+                        "Se encontró un archivo sin el encabezado de cifrado."
+                    );
+                    Console.WriteLine(
+                        "Si contiene un XML válido, se conservarán sus datos."
+                    );
+                    Console.WriteLine(
+                        "Cree una contraseña para guardarlo cifrado."
+                    );
+                }
+
+                    ManejadorXML manejador;
+
+                while (true)
+                {
+                    string contrasena;
+
+                    if (archivoCifrado)
+                    {
+                        contrasena = LeerContrasena(
+                            "Contraseña (ENTER para salir): "
+                        );
+
+                        if (string.IsNullOrWhiteSpace(contrasena))
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        string? nuevaContrasena =
+                            SolicitarNuevaContrasena();
+
+                        if (nuevaContrasena == null)
+                        {
+                            return;
+                        }
+
+                        contrasena = nuevaContrasena;
+                    }
+
+                    manejador = new ManejadorXML(
+                        rutaArchivo,
+                        contrasena
+                    );
+
+                    if (manejador.InicializarArchivo())
+                    {
+                        break;
+                    }
+
+                    Console.WriteLine();
+                    Console.WriteLine(manejador.UltimoErrorLectura);
+
+                    // Un archivo nuevo o un XML legible no falla por
+                    // una contraseña anterior: el problema debe corregirse.
+                    if (!archivoCifrado)
+                    {
+                        Console.WriteLine(
+                            "No se abrirá el menú porque no se pudo preparar el archivo."
+                        );
+                        Console.WriteLine("Presione ENTER para cerrar.");
+                        Console.ReadLine();
+                        return;
+                    }
+
+                    Console.WriteLine(
+                        "Puede intentar otra contraseña o presionar ENTER para salir."
+                    );
+                    Console.WriteLine();
+                }
+
+                // Comprueba que el archivo guardado puede descifrarse y leerse.
+                manejador.LeerEstudiantes();
+
+                if (!manejador.UltimaLecturaExitosa)
+                {
+                    Console.WriteLine(manejador.UltimoErrorLectura);
+                    Console.WriteLine("Presione ENTER para cerrar.");
+                    Console.ReadLine();
+                    return;
+                }
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Datos descifrados en memoria correctamente."
+                );
+                Console.WriteLine(
+                    "El archivo permanece cifrado en la carpeta de datos."
+                );
+                Console.WriteLine(
+                    "Presione ENTER para abrir el menú principal."
+                );
+                Console.ReadLine();
+
+                var operaciones = new OperacionesEstudiante(manejador);
+
+                var menu = new MenuPrincipal(
+                    operaciones,
+                    manejador
+                );
+
+                menu.Ejecutar();
+            }
+            catch (Exception ex) when (
+                ex is IOException ||
+                ex is UnauthorizedAccessException ||
+                ex is InvalidOperationException ||
+                ex is ArgumentException ||
+                ex is System.Security.SecurityException ||
+                ex is CryptographicException)
+            {
+                Console.WriteLine();
+                Console.WriteLine("No se pudo iniciar el sistema:");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Presione ENTER para cerrar.");
+                Console.ReadLine();
+            }
+        
         }
 
-        // El menú delega las operaciones del sistema a esta clase
+        // Clase encargada de realizar las operaciones con los estudiantes.
         private readonly OperacionesEstudiante operaciones;
+        private readonly ManejadorXML manejador;
 
-        // Recibimos las operaciones ya configuradas para trabajar con los estudiantes
-        public MenuPrincipal(OperacionesEstudiante operaciones)
+        // Recibimos las operaciones ya preparadas desde Main.
+       public MenuPrincipal(OperacionesEstudiante operaciones, ManejadorXML manejador)
         {
-            // Evitamos iniciar el menú sin la lógica necesaria
-            if (operaciones == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(operaciones),
-                    "Las operaciones del sistema no pueden ser nulas."
-                );
-            }
+            this.operaciones = operaciones
+                ?? throw new ArgumentNullException(nameof(operaciones));
 
-            this.operaciones = operaciones;
+            this.manejador = manejador
+                ?? throw new ArgumentNullException(nameof(manejador));
         }
 
         //Ejecutrar mantiene el programa funcionando hasta que el usuario desee salir
@@ -66,7 +200,11 @@ namespace GestionEstudiantes
                 //Damos las instrucciones de seleccion de opcion
                 Console.Write("Seleccione una opcion:");
                 //Leemos la opsion del usuario, prevenimos que sea nula y eliminamos espacios en blanco al inicio y al final
-                opcion = (Console.ReadLine() ?? string.Empty).Trim();
+                string? entrada = Console.ReadLine();
+
+                // Si la consola se cierra o deja de enviar datos, terminamos
+                // limpiamente en vez de repetir el menú indefinidamente.
+                opcion = entrada == null ? "0" : entrada.Trim();
 
                 //limpiamos la consola
                 LimpiarConsola();
@@ -95,15 +233,11 @@ namespace GestionEstudiantes
                         break;
 
                     case "6":
-                        CifrarXml();
-                        break;
-
-                    case "7":
-                        DescifrarXml();
+                        CambiarContrasena();
                         break;
                     
                     case "0":
-                        Console.WriteLine("Saliendo del sistema...");
+                        Console.WriteLine("Saliendo del sistema. Los cambios guardados permanecen cifrados.");
                         break;
                     
                     default:
@@ -130,8 +264,7 @@ namespace GestionEstudiantes
             Console.WriteLine("3. Modificar estudiante");
             Console.WriteLine("4. Eliminar estudiante");
             Console.WriteLine("5. Listar estudiantes");
-            Console.WriteLine("6. Cifrar XML actual");
-            Console.WriteLine("7. Descifrar copia AES");
+            Console.WriteLine("6. Cambiar contrasena");
             Console.WriteLine("0. Salir");
             Console.WriteLine("=============================================");
         }
@@ -215,55 +348,54 @@ namespace GestionEstudiantes
 
             Estudiante estudianteActual = busqueda.estudiante;
 
+            Console.Clear();
             Console.WriteLine("\nDatos actuales:");
             MostrarEstudiante(estudianteActual);
 
-            Console.WriteLine("\nIngrese los nuevos datos.");
-            Console.WriteLine(
-                "Presione ENTER para conservar el valor actual.\n"
-            );
-
-            // Si se deja un campo vacío, mantenemos el valor anterior
-            string nombres =
-                LeerValorActual("Nombres", estudianteActual.Nombres);
-
-            string apellidos =
-                LeerValorActual("Apellidos", estudianteActual.Apellidos);
-
-            string carrera =
-                LeerValorActual("Carrera", estudianteActual.Carrera);
-
-            string correo =
-                LeerValorActual("Correo", estudianteActual.Correo);
-
-            // El carné se conserva porque funciona como identificador único
-            Estudiante estudianteModificado =
-                new Estudiante(
-                    estudianteActual.Carne,
-                    nombres,
-                    apellidos,
-                    carrera,
-                    correo
-                );
-
-            // La actualización y persistencia se delegan a OperacionesEstudiante
-            var resultado =
-                operaciones.ActualizarEstudiante(
-                    estudianteActual.Carne,
-                    estudianteModificado
-                );
-
-            if (!resultado.exito)
+            while (true)
             {
-                MostrarErrores(resultado.errores);
-                return;
+                Console.WriteLine("\n1. Nombres\n2. Apellidos\n3. Carrera\n4. Correo\n0. Volver al menú principal");
+                Console.Write("Seleccione el campo: ");
+                string? opcion = Console.ReadLine()?.Trim();
+                if (opcion == null || opcion == "0") return;
+                if (opcion != "1" && opcion != "2" && opcion != "3" && opcion != "4")
+                {
+                    Console.WriteLine("Opción inválida.");
+                    continue;
+                }
+                while (true)
+                {
+                    // La copia evita cambiar los datos actuales antes de validar y guardar.
+                    var candidato = new Estudiante(estudianteActual.Carne, estudianteActual.Nombres,
+                        estudianteActual.Apellidos, estudianteActual.Carrera, estudianteActual.Correo);
+                    string campo = opcion switch { "1" => "Nombres", "2" => "Apellidos", "3" => "Carrera", _ => "Correo" };
+                    Console.Write(campo + " (ENTER para cancelar): ");
+                    string? valor = Console.ReadLine()?.Trim();
+                    if (valor == null) return;
+                    if (valor.Length == 0) break;
+                    switch (opcion)
+                    {
+                        case "1": candidato.Nombres = valor; break;
+                        case "2": candidato.Apellidos = valor; break;
+                        case "3": candidato.Carrera = valor; break;
+                        case "4": candidato.Correo = valor; break;
+                    }
+                    var errores = Validador.ValidarDatos(candidato);
+                    if (errores.Count > 0)
+                    {
+                        MostrarErrores(errores);
+                        Console.WriteLine("Intente nuevamente.");
+                        continue;
+                    }
+                    var resultado = operaciones.ActualizarEstudiante(estudianteActual.Carne, candidato);
+                    if (!resultado.exito) { MostrarErrores(resultado.errores); break; }
+                    estudianteActual = candidato;
+                    Console.WriteLine("Estudiante modificado correctamente.");
+                    MostrarEstudiante(estudianteActual);
+                    break;
+                }
             }
-
-            Console.WriteLine(
-                "\nEstudiante modificado correctamente."
-            );
         }
-
         // Elimina un estudiante después de comprobar que exista
         // Busca al estudiante y solicita confirmación antes de eliminarlo
         private void EliminarEstudiante()
@@ -365,138 +497,7 @@ namespace GestionEstudiantes
             }
         }
 
-        // Cifra una copia del XML principal sin modificarlo
-        private void CifrarXml()
-        {
-            Console.WriteLine("=== CIFRAR XML ===\n");
-            string rutaXml;
-            try
-            {
-                rutaXml = ObtenerRutaXml();
-            }
-            catch (Exception ex) when (ex is IOException ||
-                                       ex is UnauthorizedAccessException ||
-                                       ex is InvalidOperationException)
-            {
-                Console.WriteLine($"No se pudo ubicar el archivo de datos: {ex.Message}");
-                return;
-            }
-
-            string rutaCifrada = rutaXml + ".aes";
-
-            if (!File.Exists(rutaXml))
-            {
-                Console.WriteLine("No existe el archivo XML principal.");
-                return;
-            }
-
-            string contrasena = LeerContrasena("Ingrese la contraseña: ");
-            string confirmacion = LeerContrasena("Confirme la contraseña: ");
-            if (!string.Equals(contrasena, confirmacion, StringComparison.Ordinal))
-            {
-                Console.WriteLine("\nLas contraseñas no coinciden.");
-                return;
-            }
-
-            if (File.Exists(rutaCifrada) &&
-                !Confirmar($"El archivo {rutaCifrada} ya existe. ¿Desea reemplazarlo? (S/N): "))
-            {
-                Console.WriteLine("\nNo se reemplazó la copia cifrada.");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(contrasena))
-            {
-                Console.WriteLine("\nLa contraseña no puede estar vacía.");
-                return;
-            }
-
-            try
-            {
-                byte[] xml = File.ReadAllBytes(rutaXml);
-                byte[] cifrado = CifradorAES.Encriptar(xml, contrasena);
-                GuardarArchivoTemporal(rutaCifrada, cifrado);
-                Console.WriteLine($"\nCopia cifrada guardada en: {rutaCifrada}");
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine($"\nNo se pudo leer o guardar el archivo: {ex.Message}");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                Console.WriteLine($"\nNo hay permisos para usar el archivo: {ex.Message}");
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"\nNo se pudo cifrar el XML: {ex.Message}");
-            }
-        }
-
-        // Descifra la copia AES en un archivo nuevo sin reemplazar el XML principal
-        private void DescifrarXml()
-        {
-            Console.WriteLine("=== DESCIFRAR COPIA AES ===\n");
-            string rutaCifrada;
-            try
-            {
-                rutaCifrada = ObtenerRutaXml() + ".aes";
-            }
-            catch (Exception ex) when (ex is IOException ||
-                                       ex is UnauthorizedAccessException ||
-                                       ex is InvalidOperationException)
-            {
-                Console.WriteLine($"No se pudo ubicar el archivo de datos: {ex.Message}");
-                return;
-            }
-
-            string rutaDescifrada = Path.Combine(
-                Path.GetDirectoryName(rutaCifrada)!,
-                "prueba_XML_descifrado.xml");
-
-            if (!File.Exists(rutaCifrada))
-            {
-                Console.WriteLine("No existe la copia cifrada prueba_XML.xml.aes.");
-                return;
-            }
-
-            string contrasena = LeerContrasena("Ingrese la contraseña: ");
-            if (string.IsNullOrWhiteSpace(contrasena))
-            {
-                Console.WriteLine("\nLa contraseña no puede estar vacía.");
-                return;
-            }
-
-            if (File.Exists(rutaDescifrada) &&
-                !Confirmar($"El archivo {rutaDescifrada} ya existe. ¿Desea reemplazarlo? (S/N): "))
-            {
-                Console.WriteLine("\nNo se reemplazó el XML descifrado.");
-                return;
-            }
-
-            try
-            {
-                byte[] cifrado = File.ReadAllBytes(rutaCifrada);
-                byte[] xml = CifradorAES.Desencriptar(cifrado, contrasena);
-                GuardarArchivoTemporal(rutaDescifrada, xml);
-                Console.WriteLine($"\nXML descifrado guardado en: {rutaDescifrada}");
-            }
-            catch (CryptographicException ex)
-            {
-                Console.WriteLine($"\nNo se pudo descifrar: {ex.Message}");
-            }
-            catch (InvalidDataException ex)
-            {
-                Console.WriteLine($"\nLa copia cifrada está dañada o no tiene un formato válido: {ex.Message}");
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine($"\nNo se pudo leer o guardar el archivo: {ex.Message}");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                Console.WriteLine($"\nNo hay permisos para usar el archivo: {ex.Message}");
-            }
-        }
+    
 
         private static string ObtenerRutaXml() => ConfiguracionDatos.PrepararRutaXml();
 
@@ -570,8 +571,30 @@ namespace GestionEstudiantes
             Console.Write("Carrera: ");
             string carrera = Console.ReadLine() ?? string.Empty;
 
-            Console.Write("Correo: ");
-            string correo = Console.ReadLine() ?? string.Empty;
+            string correo;
+
+            while (true)
+            {
+                Console.Write("Correo :");
+                string? entrada = Console.ReadLine();
+
+                //Si por cualquier cosa se cierra la entrada de la consola, evitamos que haya un ciclo infinito.
+                if(entrada == null)
+                {
+                    correo = string.Empty;
+                    break;
+                }
+
+                correo = entrada.Trim();
+
+                if (Validador.EsCorreoValido(correo))
+                {
+                    break;
+                }
+
+                Console.WriteLine("Correo invalido. Escriba una direccion de como alumno@universidad.edu");
+                Console.WriteLine("Intentelo nuevamente. \n");
+            }
 
             return new Estudiante(
                 carne,
@@ -637,6 +660,87 @@ namespace GestionEstudiantes
             {
                 Console.Clear();
             }
+        }
+
+
+        //Logica para que podamos pedir una nueva contrasena
+        private static string? SolicitarNuevaContrasena()
+        {
+            while (true)
+            {
+                string nueva = LeerContrasena(
+                    "Nueva contraseña (ENTER para cancelar): "
+                );
+
+                if (string.IsNullOrWhiteSpace(nueva))
+                {
+                    return null;
+                }
+
+                string confirmacion = LeerContrasena(
+                    "Confirme la nueva contraseña: "
+                );
+
+                if (string.Equals(
+                    nueva,
+                    confirmacion,
+                    StringComparison.Ordinal))
+                {
+                    return nueva;
+                }
+
+                Console.WriteLine(
+                    "Las contraseñas no coinciden. Intente nuevamente."
+                );
+                Console.WriteLine();
+            }
+        }
+
+
+        private void CambiarContrasena()
+        {
+            Console.WriteLine("=== CAMBIAR CONTRASEÑA ===");
+            Console.WriteLine();
+
+            string actual = LeerContrasena(
+                "Contraseña actual (ENTER para cancelar): "
+            );
+
+            if (string.IsNullOrWhiteSpace(actual))
+            {
+                Console.WriteLine("Cambio cancelado.");
+                return;
+            }
+
+            string? nueva = SolicitarNuevaContrasena();
+
+            if (nueva == null)
+            {
+                Console.WriteLine("Cambio cancelado.");
+                return;
+            }
+
+            bool cambioExitoso = manejador.CambiarContrasena(
+                actual,
+                nueva,
+                out string error
+            );
+
+            if (!cambioExitoso)
+            {
+                Console.WriteLine(error);
+                return;
+            }
+
+            Console.WriteLine(
+                "Contraseña cambiada correctamente."
+            );
+            Console.WriteLine(
+                "Los datos se guardaron cifrados con la nueva contraseña."
+            );
+            Console.WriteLine(
+                "Utilice esa contraseña la próxima vez que abra el programa."
+            );
         }
     }
 
