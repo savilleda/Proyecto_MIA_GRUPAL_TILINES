@@ -74,6 +74,9 @@ namespace GestionEstudiantes
 
                         if (string.IsNullOrWhiteSpace(contrasena))
                         {
+                            Console.WriteLine("\nSaliendo del sistema...");
+                            Console.WriteLine("Presione ENTER para cerrar.");
+                            Console.ReadLine();
                             return;
                         }
                     }
@@ -297,28 +300,38 @@ namespace GestionEstudiantes
         {
             Console.WriteLine("=== BÚSQUEDA DE ESTUDIANTE ===\n");
 
-            Console.Write("Ingrese el carné del estudiante: ");
-            string carne = (Console.ReadLine() ?? string.Empty).Trim();
+            Estudiante? estudianteActual = null;
 
-            // La búsqueda se realiza desde OperacionesEstudiante
-            var resultado =
-                operaciones.BuscarEstudiantePorCarne(carne);
-
-            // Si no se encontró o hubo un error, mostramos el mensaje recibido
-            if (!resultado.encontrado)
+            // Bucle para solicitar y buscar el carné hasta que se encuentre uno válido o el usuario cancele
+            while (true)
             {
-                MostrarErrores(resultado.errores);
-                return;
-            }
+                Console.Write("Ingrese el carné del estudiante (ENTER para cancelar): ");
+                string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            if (resultado.estudiante == null)
-            {
-                Console.WriteLine("\nNo se encontró el estudiante.");
-                return;
+                // Si presiona ENTER sin escribir nada, cancela la operación y vuelve al menú
+                if (string.IsNullOrEmpty(carne))
+                {
+                    Console.WriteLine("\nOperación cancelada.");
+                    return;
+                }
+
+                // Se realiza la búsqueda desde OperacionesEstudiante
+                var busqueda = operaciones.BuscarEstudiantePorCarne(carne);
+
+                if (!busqueda.encontrado || busqueda.estudiante == null)
+                {
+                    MostrarErrores(busqueda.errores);
+                    Console.WriteLine("Intente nuevamente con otro carné.\n");
+                    continue; // Repite el ciclo para volver a pedir el carné
+                }
+
+                // Si se encontró con éxito, guardamos la referencia y salimos de este bucle de búsqueda
+                estudianteActual = busqueda.estudiante;
+                break;
             }
 
             Console.WriteLine("\nEstudiante encontrado:");
-            MostrarEstudiante(resultado.estudiante);
+            MostrarEstudiante(estudianteActual);
         }
 
         //Modificacion de la informacion de un estudiante existe
@@ -620,10 +633,10 @@ namespace GestionEstudiantes
                 carne = entrada.Trim();
 
                 // 1. Valida el formato de 6 dígitos
-                if (!Validador.EsCarneValido(carne))
+                if (!Validador.EsCarneValido(carne, out string mensajeError))
                 {
-                    Console.WriteLine("Carné inválido. Debe ser un número entero de 6 dígitos.");
-                    Console.WriteLine("Intentelo nuevamente. \n");
+                    Console.WriteLine($"Error: {mensajeError}");
+                    Console.WriteLine("Inténtelo nuevamente. \n");
                     continue;
                 }
 

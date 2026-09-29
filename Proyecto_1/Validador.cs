@@ -290,7 +290,7 @@ namespace GestionEstudiantes
                 return false;
             }
             
-            if(carne.Length != 6)
+            if(carne.Length != 6 || carne.Contains('+') || carne.Contains('-'))
             {
                 return false;
             }
@@ -303,6 +303,42 @@ namespace GestionEstudiantes
                     StringComparison.OrdinalIgnoreCase
                 );
             }
+        }
+        public static bool EsCarneValido(string carne, out string mensajeError)
+        {
+            // 1. Validar que no esté vacío
+            if (string.IsNullOrWhiteSpace(carne))
+            {
+                mensajeError = "El carné no puede estar vacío.";
+                return false;
+            }
+
+            string texto = carne.Trim();
+
+            // 2. Validar que tenga exactamente 6 caracteres
+            if (texto.Length != 6)
+            {
+                mensajeError = "El carné debe contener exactamente 6 dígitos.";
+                return false;
+            }
+
+            // 3. Validar que no contenga signos numéricos (+ / -)
+            if (texto.Contains('+') || texto.Contains('-'))
+            {
+                mensajeError = "El carné no debe contener signos (+ o -).";
+                return false;
+            }
+
+            // 4. Validar que sea numérico
+            if (!int.TryParse(texto, out _))
+            {
+                mensajeError = "El carné debe ser un número entero de 6 dígitos.";
+                return false;
+            }
+
+            // Si pasa todas las validaciones
+            mensajeError = string.Empty;
+            return true;
         }
         //Compruba que el codigo que llama al validador entregue una coleccion
         private static void ComprobarColeccion(IEnumerable<Estudiante> estudiantes)
