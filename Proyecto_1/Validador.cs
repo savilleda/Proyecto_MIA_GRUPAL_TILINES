@@ -61,9 +61,17 @@ namespace GestionEstudiantes
             {
                 //No deja registrar un estudiante con un carné que ya exista
                 Console.WriteLine("El carné encontrado fue: " + estudiante.Carne +" pero no es único");
-                errores.Add("Ya existe un estudiante con ese carne");
+                errores.Add("Ya existe un estudiante con ese carné");
             }
             //Devuelve los errores de los campos y posible carné duplicado
+            if(estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Correo) && 
+            ExisteCorreo(estudiante.Correo, estudiantes))
+            {
+                //No deja registrar un estudiante con un correo que ya exista
+                Console.WriteLine("El correo encontrado fue: " + estudiante.Correo +" pero no es único");
+                errores.Add("Ya existe un estudiante con ese correo");
+            }
+            
             return errores;
         }
 
@@ -133,7 +141,7 @@ namespace GestionEstudiantes
                 return false;
             }
 
-            //Compara los valores ignorando mayúsculas y espacios al inicio o final
+            //Compara los valores ignorando espacios al inicio o final
             return string.Equals(
                 primero.Trim(),
                 segundo.Trim(),
@@ -148,6 +156,35 @@ namespace GestionEstudiantes
             ComprobarColeccion(estudiantes);
             //Comprueba si algún estudiante tiene el mismo carné que el proporcionado
             return estudiantes.Any(e => e != null && SonElMismoCarne(e.Carne, carne));     
+        }
+
+        //Revisa si son el mismo correo, ignorando espacios al inicio o final
+        public static bool SonElMismoCorreo(string primero, string segundo)
+        {
+            //Comprueba si ambos valores son nulos o vacíos
+            if(string.IsNullOrWhiteSpace(primero) ||
+            string.IsNullOrWhiteSpace(segundo))
+            {
+                //Los valores vacios no se consideran correos iguales
+                return false;
+            }
+
+            //Compara los valores ignorando espacios al inicio o final
+            return string.Equals(
+                primero.Trim(),
+                segundo.Trim(),
+                StringComparison.Ordinal
+            );
+        }
+
+        //Comprueba si un correo ya existe en la colección de estudiantes
+         public static bool ExisteCorreo(string correo, 
+         IEnumerable<Estudiante> estudiantes)
+        {
+            //Comprueba que la colección no sea nulo
+            ComprobarColeccion(estudiantes);
+            //Comprueba si algún estudiante tiene el mismo correo que el proporcionado
+            return estudiantes.Any(e => e != null && SonElMismoCorreo(e.Correo, correo));     
         }
 
         //Comprueba que la colección no sea nula
@@ -231,6 +268,78 @@ namespace GestionEstudiantes
                 return false;
             }
         }
+        //Verifica si el carné tiene un formato válido que consiste en 6 caracteres numericos
+        public static bool EsCarneValido(string carne)
+        {
+            //Verificamos que no venga vacio o contenga espacios
+            if (string.IsNullOrWhiteSpace(carne))
+            {
+                return false;
+            }
+           
+            //Quita espacios al inicio y final del carnet
+            string texto = carne.Trim();
+            try
+            {
+                //Intenta convertir el carné a un número entero
+                int numero = int.Parse(texto);
+            }
+            catch (FormatException)
+            {
+                //Si el carné no es un número válido, retorna false
+                return false;
+            }
+            
+            if(carne.Length != 6 || carne.Contains('+') || carne.Contains('-'))
+            {
+                return false;
+            }
+            else
+            {
+                //Retorna true si el carné tiene un formato válido, ignorando mayúsculas y minúsculas
+                return string.Equals(
+                    texto,
+                    carne,
+                    StringComparison.OrdinalIgnoreCase
+                );
+            }
+        }
+        public static bool EsCarneValido(string carne, out string mensajeError)
+        {
+            // 1. Validar que no esté vacío
+            if (string.IsNullOrWhiteSpace(carne))
+            {
+                mensajeError = "El carné no puede estar vacío.";
+                return false;
+            }
+
+            string texto = carne.Trim();
+
+            // 2. Validar que tenga exactamente 6 caracteres
+            if (texto.Length != 6)
+            {
+                mensajeError = "El carné debe contener exactamente 6 dígitos.";
+                return false;
+            }
+
+            // 3. Validar que no contenga signos numéricos (+ / -)
+            if (texto.Contains('+') || texto.Contains('-'))
+            {
+                mensajeError = "El carné no debe contener signos (+ o -).";
+                return false;
+            }
+
+            // 4. Validar que sea numérico
+            if (!int.TryParse(texto, out _))
+            {
+                mensajeError = "El carné debe ser un número entero de 6 dígitos.";
+                return false;
+            }
+
+            // Si pasa todas las validaciones
+            mensajeError = string.Empty;
+            return true;
+        }
         //Compruba que el codigo que llama al validador entregue una coleccion
         private static void ComprobarColeccion(IEnumerable<Estudiante> estudiantes)
         {
@@ -240,7 +349,7 @@ namespace GestionEstudiantes
 
                 throw new ArgumentNullException(
                     nameof(estudiantes),
-                    "Debe de dar la coleccion completa de estudiantes cargados"
+                    "Debe de dar la colección completa de estudiantes cargados"
                 );
             }
         }

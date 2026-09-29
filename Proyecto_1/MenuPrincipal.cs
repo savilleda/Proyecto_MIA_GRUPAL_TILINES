@@ -4,7 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 
 /*DE MARCO: elimine cifrar y descfifrar de la clase. Ahora se ejecutan automaticamente, no con opcion al usuario. 
-Esto para menetener la idea de la seguridad de los datos y mantener un proyecto mas limpio :)
+Esto para mantener la idea de la seguridad de los datos y mantener un proyecto mas limpio :)
 */
 
 namespace GestionEstudiantes
@@ -18,7 +18,7 @@ namespace GestionEstudiantes
         {
             try
             {
-                Console.Title = "Sistema de Gestion de Estudiantes";
+                Console.Title = "Sistema de Gestión de Estudiantes";
 
                 //Preparamos la carpeta y devolvemos la ruta completa
                 string rutaArchivo = ConfiguracionDatos.PrepararRutaXml();
@@ -31,7 +31,7 @@ namespace GestionEstudiantes
                 //Si no existe el archivo
                 if (!archivoExiste)
                 {
-                    Console.WriteLine("Primera ejecucion: se creara un archivo sinn estudiantes.");
+                    Console.WriteLine("Primera ejecución: se creará un archivo sin estudiantes.");
                         Console.WriteLine(
                     "Cree una contraseña para proteger sus datos."
                     );
@@ -74,6 +74,9 @@ namespace GestionEstudiantes
 
                         if (string.IsNullOrWhiteSpace(contrasena))
                         {
+                            Console.WriteLine("\nSaliendo del sistema...");
+                            Console.WriteLine("Presione ENTER para cerrar.");
+                            Console.ReadLine();
                             return;
                         }
                     }
@@ -198,7 +201,7 @@ namespace GestionEstudiantes
                 MostrarMenu();
 
                 //Damos las instrucciones de seleccion de opcion
-                Console.Write("Seleccione una opcion:");
+                Console.Write("Seleccione una opción: ");
                 //Leemos la opsion del usuario, prevenimos que sea nula y eliminamos espacios en blanco al inicio y al final
                 string? entrada = Console.ReadLine();
 
@@ -241,7 +244,7 @@ namespace GestionEstudiantes
                         break;
                     
                     default:
-                        Console.WriteLine("Opcion invalida. Por favor, seleccione una opcion valida.");
+                        Console.WriteLine("Opción inválida. Por favor, seleccione una opción válida.");
                         break;
                 }
 
@@ -257,14 +260,14 @@ namespace GestionEstudiantes
         private void MostrarMenu()
         {
             Console.WriteLine("=============================================");
-            Console.WriteLine("     SISTEMA DE GESTION DE ESTUDIANTES");
+            Console.WriteLine("     SISTEMA DE GESTIÓN DE ESTUDIANTES");
             Console.WriteLine("=============================================");
             Console.WriteLine("1. Registrar estudiante");
-            Console.WriteLine("2. Buscar estudiante por no. de carnet");
+            Console.WriteLine("2. Buscar estudiante por No. de carnet");
             Console.WriteLine("3. Modificar estudiante");
             Console.WriteLine("4. Eliminar estudiante");
             Console.WriteLine("5. Listar estudiantes");
-            Console.WriteLine("6. Cambiar contrasena");
+            Console.WriteLine("6. Cambiar contraseña");
             Console.WriteLine("0. Salir");
             Console.WriteLine("=============================================");
         }
@@ -297,28 +300,38 @@ namespace GestionEstudiantes
         {
             Console.WriteLine("=== BÚSQUEDA DE ESTUDIANTE ===\n");
 
-            Console.Write("Ingrese el carné del estudiante: ");
-            string carne = (Console.ReadLine() ?? string.Empty).Trim();
+            Estudiante? estudianteActual = null;
 
-            // La búsqueda se realiza desde OperacionesEstudiante
-            var resultado =
-                operaciones.BuscarEstudiantePorCarne(carne);
-
-            // Si no se encontró o hubo un error, mostramos el mensaje recibido
-            if (!resultado.encontrado)
+            // Bucle para solicitar y buscar el carné hasta que se encuentre uno válido o el usuario cancele
+            while (true)
             {
-                MostrarErrores(resultado.errores);
-                return;
-            }
+                Console.Write("Ingrese el carné del estudiante (ENTER para cancelar): ");
+                string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            if (resultado.estudiante == null)
-            {
-                Console.WriteLine("\nNo se encontró el estudiante.");
-                return;
+                // Si presiona ENTER sin escribir nada, cancela la operación y vuelve al menú
+                if (string.IsNullOrEmpty(carne))
+                {
+                    Console.WriteLine("\nOperación cancelada.");
+                    return;
+                }
+
+                // Se realiza la búsqueda desde OperacionesEstudiante
+                var busqueda = operaciones.BuscarEstudiantePorCarne(carne);
+
+                if (!busqueda.encontrado || busqueda.estudiante == null)
+                {
+                    MostrarErrores(busqueda.errores);
+                    Console.WriteLine("Intente nuevamente con otro carné.\n");
+                    continue; // Repite el ciclo para volver a pedir el carné
+                }
+
+                // Si se encontró con éxito, guardamos la referencia y salimos de este bucle de búsqueda
+                estudianteActual = busqueda.estudiante;
+                break;
             }
 
             Console.WriteLine("\nEstudiante encontrado:");
-            MostrarEstudiante(resultado.estudiante);
+            MostrarEstudiante(estudianteActual);
         }
 
         //Modificacion de la informacion de un estudiante existe
@@ -326,27 +339,36 @@ namespace GestionEstudiantes
         private void ModificarEstudiante()
         {
             Console.WriteLine("=== MODIFICACIÓN DE ESTUDIANTE ===\n");
+            
+            Estudiante? estudianteActual = null;
 
-            Console.Write("Ingrese el carné del estudiante: ");
-            string carne = (Console.ReadLine() ?? string.Empty).Trim();
-
-            // Primero buscamos al estudiante para obtener sus datos actuales
-            var busqueda =
-                operaciones.BuscarEstudiantePorCarne(carne);
-
-            if (!busqueda.encontrado)
+            // Bucle para solicitar y buscar el carné hasta que se encuentre uno válido o el usuario cancele
+            while (true)
             {
-                MostrarErrores(busqueda.errores);
-                return;
-            }
+                Console.Write("Ingrese el carné del estudiante (ENTER para cancelar): ");
+                string carne = (Console.ReadLine() ?? string.Empty).Trim();
 
-            if (busqueda.estudiante == null)
-            {
-                Console.WriteLine("\nNo se encontró el estudiante.");
-                return;
-            }
+                // Si presiona ENTER sin escribir nada, cancela la operación y vuelve al menú
+                if (string.IsNullOrEmpty(carne))
+                {
+                    Console.WriteLine("\nOperación cancelada.");
+                    return;
+                }
 
-            Estudiante estudianteActual = busqueda.estudiante;
+                // Se realiza la búsqueda desde OperacionesEstudiante
+                var busqueda = operaciones.BuscarEstudiantePorCarne(carne);
+
+                if (!busqueda.encontrado || busqueda.estudiante == null)
+                {
+                    MostrarErrores(busqueda.errores);
+                    Console.WriteLine("Intente nuevamente con otro carné.\n");
+                    continue; // Repite el ciclo para volver a pedir el carné
+                }
+
+                // Si se encontró con éxito, guardamos la referencia y salimos de este bucle de búsqueda
+                estudianteActual = busqueda.estudiante;
+                break;
+            }
 
             Console.Clear();
             Console.WriteLine("\nDatos actuales:");
@@ -354,7 +376,7 @@ namespace GestionEstudiantes
 
             while (true)
             {
-                Console.WriteLine("\n1. Nombres\n2. Apellidos\n3. Carrera\n4. Correo\n0. Volver al menú principal");
+                Console.WriteLine("\n1. Nombre(s)\n2. Apellidos\n3. Carrera\n4. Correo\n0. Volver al menú principal");
                 Console.Write("Seleccione el campo: ");
                 string? opcion = Console.ReadLine()?.Trim();
                 if (opcion == null || opcion == "0") return;
@@ -368,7 +390,7 @@ namespace GestionEstudiantes
                     // La copia evita cambiar los datos actuales antes de validar y guardar.
                     var candidato = new Estudiante(estudianteActual.Carne, estudianteActual.Nombres,
                         estudianteActual.Apellidos, estudianteActual.Carrera, estudianteActual.Correo);
-                    string campo = opcion switch { "1" => "Nombres", "2" => "Apellidos", "3" => "Carrera", _ => "Correo" };
+                    string campo = opcion switch { "1" => "Nombre(s)", "2" => "Apellidos", "3" => "Carrera", _ => "Correo" };
                     Console.Write(campo + " (ENTER para cancelar): ");
                     string? valor = Console.ReadLine()?.Trim();
                     if (valor == null) return;
@@ -380,6 +402,27 @@ namespace GestionEstudiantes
                         case "3": candidato.Carrera = valor; break;
                         case "4": candidato.Correo = valor; break;
                     }
+
+                    // Validar que el nuevo correo no sea duplicado
+                    if (opcion == "4")
+                    {
+                        List<Estudiante> estudiantesActuales = operaciones.ListarEstudiantes();
+
+                        // Revisa si el correo estas registrado con otro estudiante diferente al que se está editando
+                        bool correoDuplicado = estudiantesActuales.Any(e => 
+                            e != null && 
+                            !Validador.SonElMismoCarne(e.Carne, estudianteActual.Carne) && 
+                            Validador.SonElMismoCorreo(e.Correo, valor)
+                        );
+
+                        if (correoDuplicado)
+                        {
+                            Console.WriteLine("\nEl correo ingresado ya pertenece a otro estudiante.");
+                            Console.WriteLine("Intente nuevamente con un correo diferente.\n");
+                            continue; // Repite el ciclo while para volver a pedir el valor
+                        }
+                    }
+
                     var errores = Validador.ValidarDatos(candidato);
                     if (errores.Count > 0)
                     {
@@ -390,7 +433,7 @@ namespace GestionEstudiantes
                     var resultado = operaciones.ActualizarEstudiante(estudianteActual.Carne, candidato);
                     if (!resultado.exito) { MostrarErrores(resultado.errores); break; }
                     estudianteActual = candidato;
-                    Console.WriteLine("Estudiante modificado correctamente.");
+                    Console.WriteLine("\nEstudiante modificado correctamente.\n");
                     MostrarEstudiante(estudianteActual);
                     break;
                 }
@@ -402,27 +445,41 @@ namespace GestionEstudiantes
         {
             Console.WriteLine("=== ELIMINACIÓN DE ESTUDIANTE ===\n");
 
-            Console.Write("Ingrese el carné del estudiante: ");
-            string carne = (Console.ReadLine() ?? string.Empty).Trim();
+            Estudiante? estudianteEncontrado = null;
+            string carneValido;
 
-            // Primero buscamos al estudiante para mostrar sus datos
-            var busqueda =
-                operaciones.BuscarEstudiantePorCarne(carne);
-
-            if (!busqueda.encontrado)
+            // Bucle para solicitar y buscar el carné
+            while (true)
             {
-                MostrarErrores(busqueda.errores);
-                return;
+                Console.Write("Ingrese el carné del estudiante (ENTER para cancelar): ");
+                string carne = (Console.ReadLine() ?? string.Empty).Trim();
+
+                // Si presiona ENTER sin escribir nada, sale al menú
+                if (string.IsNullOrEmpty(carne))
+                {
+                    Console.WriteLine("\nOperación cancelada.");
+                    return;
+                }
+
+                // Se realiza la búsqueda
+                var busqueda = operaciones.BuscarEstudiantePorCarne(carne);
+
+                if (!busqueda.encontrado || busqueda.estudiante == null)
+                {
+                    MostrarErrores(busqueda.errores);
+                    Console.WriteLine("Intente nuevamente con otro carné.\n");
+                    continue; // Vuelve a pedir el carné
+                }
+
+                // Si se encuentra, guardamos la información y salimos del bucle de búsqueda
+                estudianteEncontrado = busqueda.estudiante;
+                carneValido = carne;
+                break;
             }
 
-            if (busqueda.estudiante == null)
-            {
-                Console.WriteLine("\nNo se encontró el estudiante.");
-                return;
-            }
-
+            // Confirmación y eliminación del estudiante encontrado
             Console.WriteLine("\nEstudiante encontrado:\n");
-            MostrarEstudiante(busqueda.estudiante);
+            MostrarEstudiante(estudianteEncontrado);
 
             Console.Write(
                 "\n¿Desea eliminar este estudiante? (S/N): "
@@ -442,7 +499,7 @@ namespace GestionEstudiantes
             // La eliminación y actualización del archivo se hacen
             // desde OperacionesEstudiante.
             var resultado =
-                operaciones.EliminarEstudiante(carne);
+                operaciones.EliminarEstudiante(carneValido);
 
             if (!resultado.exito)
             {
@@ -559,10 +616,43 @@ namespace GestionEstudiantes
         // Solicita la información para crear un nuevo estudiante
         private Estudiante LeerDatosEstudiante()
         {
-            Console.Write("Carné: ");
-            string carne = Console.ReadLine() ?? string.Empty;
+            string carne;
 
-            Console.Write("Nombres: ");
+            while (true)
+            {
+                Console.Write("Carné (entero de 6 dígitos): ");
+                string? entrada = Console.ReadLine();
+
+                //Si por cualquier cosa se cierra la entrada de la consola, evitamos que haya un ciclo infinito.
+                if(entrada == null)
+                {
+                    carne = string.Empty;
+                    break;
+                }
+
+                carne = entrada.Trim();
+
+                // 1. Valida el formato de 6 dígitos
+                if (!Validador.EsCarneValido(carne, out string mensajeError))
+                {
+                    Console.WriteLine($"Error: {mensajeError}");
+                    Console.WriteLine("Inténtelo nuevamente. \n");
+                    continue;
+                }
+
+                // 2. Valida si el carné ya está en uso
+                List<Estudiante> estudiantesActuales = operaciones.ListarEstudiantes();
+                if (Validador.ExisteCarne(carne, estudiantesActuales))
+                {
+                    Console.WriteLine($"El carné '{carne}' ya está registrado.");
+                    Console.WriteLine("Intentelo nuevamente. \n");
+                    continue;
+                }
+
+                break; // Carné válido y único
+            }
+
+            Console.Write("Nombre(s): ");
             string nombres = Console.ReadLine() ?? string.Empty;
 
             Console.Write("Apellidos: ");
@@ -575,7 +665,7 @@ namespace GestionEstudiantes
 
             while (true)
             {
-                Console.Write("Correo :");
+                Console.Write("Correo: ");
                 string? entrada = Console.ReadLine();
 
                 //Si por cualquier cosa se cierra la entrada de la consola, evitamos que haya un ciclo infinito.
@@ -586,14 +676,25 @@ namespace GestionEstudiantes
                 }
 
                 correo = entrada.Trim();
-
-                if (Validador.EsCorreoValido(correo))
+                
+                // 1. Valida el formato del correo
+                if (!Validador.EsCorreoValido(correo))
                 {
-                    break;
+                    Console.WriteLine("Correo inválido. Escriba una dirección como alumno@universidad.edu.");
+                    Console.WriteLine("Intentelo nuevamente. \n");
+                    continue;
                 }
 
-                Console.WriteLine("Correo invalido. Escriba una direccion de como alumno@universidad.edu");
-                Console.WriteLine("Intentelo nuevamente. \n");
+                // 2. Valida si el correo ya está en uso
+                List<Estudiante> estudiantesActuales = operaciones.ListarEstudiantes();
+                if (Validador.ExisteCorreo(correo, estudiantesActuales))
+                {
+                    Console.WriteLine($"El correo '{correo}' ya está registrado. Ingrese otro diferente.");
+                    Console.WriteLine("Intentelo nuevamente. \n");
+                    continue; // Repite el ciclo sin salir
+                }
+
+                break; // Correo válido y único
             }
 
             return new Estudiante(
@@ -656,9 +757,15 @@ namespace GestionEstudiantes
         // (por ejemplo, al ejecutar pruebas automatizadas)
         private void LimpiarConsola()
         {
-            if (!Console.IsOutputRedirected)
+            try
             {
                 Console.Clear();
+                // Secuencia ANSI que limpia el buffer de desplazamiento y mueve el cursor al inicio
+                Console.Write("\x1b[3J\x1b[H");
+            }
+            catch (System.IO.IOException)
+            {
+                // Ignora si el entorno no lo soporta
             }
         }
 
