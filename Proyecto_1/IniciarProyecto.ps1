@@ -7,7 +7,6 @@ $raiz = 'C:\mia_proyecto_I'
 $url = 'https://github.com/savilleda/Proyecto_MIA_GRUPAL_TILINES.git'
 $repositorio = Join-Path $raiz 'Proyecto_MIA_GRUPAL_TILINES'
 $proyecto = Join-Path $repositorio 'Proyecto_1\Proyecto_1.csproj'
-$salida = Join-Path $raiz 'ejecutable'
 
 try {
     foreach ($comando in @('git', 'gh', 'dotnet')) {
@@ -51,24 +50,18 @@ try {
     if (-not (Test-Path -LiteralPath $proyecto -PathType Leaf)) {
         throw "No se encontro el proyecto: $proyecto"
     }
-    New-Item -ItemType Directory -Path $salida -Force | Out-Null
-
-    # Compila el .csproj directamente y conserva todos los archivos de salida.
+    # Guarda los datos en la misma carpeta base y abre el programa.
+    $env:GESTION_ESTUDIANTES_DATOS = Join-Path $raiz 'Datos'
+    New-Item -ItemType Directory -Path $env:GESTION_ESTUDIANTES_DATOS -Force | Out-Null
     Push-Location -LiteralPath (Split-Path -Parent $proyecto)
     try {
-        & dotnet build $proyecto --configuration Release --output $salida -p:UseAppHost=true
-        if ($LASTEXITCODE -ne 0) { throw 'La compilacion fallo.' }
+        & dotnet run --project $proyecto --configuration Release
+        if ($LASTEXITCODE -ne 0) { throw "El programa fallo con el codigo $LASTEXITCODE." }
     }
     finally {
         Pop-Location
     }
 
-    $exe = Join-Path $salida 'Proyecto_1.exe'
-    if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
-        throw "La compilacion no genero el ejecutable esperado: $exe"
-    }
-    Write-Host "Ejecutable generado: $exe" -ForegroundColor Green
-    Write-Host 'Conserva los demas archivos de la carpeta ejecutable junto al EXE.'
     exit 0
 }
 catch {
