@@ -1,214 +1,227 @@
 using System;
-// Deja usar list e Inumerable
+// Permite usar List e IEnumerable
 using System.Collections.Generic;
-//Deja utilizar Any para buscar coincidencias en listas
+// Permite usar Any para buscar coincidencias en listas
 using System.Linq;
-//Permite revisar el formato de correo electronico
+// Permite revisar el formato del correo electrónico
 using System.Net.Mail;
-//Permite comprobar si un texto contiene caracteres validos para XML
+// Permite comprobar si un texto contiene caracteres válidos para XML
 using System.Xml;
+
 // El namespace agrupa las clases del proyecto para mantener el código organizado
-// y evitar conflictos si existen clases con nombres parecidos en otros lugares
+// y evitar conflictos con clases de nombres parecidos
 namespace GestionEstudiantes
 {
-    
+    // Reúne todas las reglas de negocio de los estudiantes.
+    // Solo revisa y devuelve errores: no imprime nada ni guarda datos.
     public static class Validador
     {
-        //Este método revisa que el correo tenga un formato válido
+        // Revisa que todos los campos del estudiante tengan contenido válido
+        // y que el correo tenga un formato correcto.
         public static List<string> ValidarDatos(Estudiante estudiante)
         {
-            //Crea una lista vacía para guardar errores
+            // Lista donde se guardan los errores encontrados
             var errores = new List<string>();
-            //Comprueba si no se recibió un objeto estudiante
-            if(estudiante == null)
+
+            // Si no se recibió un estudiante, no hay nada más que revisar
+            if (estudiante == null)
             {
-                //Agrega un mensaje de error a la lista y la devuelve
                 errores.Add("No se recibió un estudiante para validar");
                 return errores;
             }
-            //Revisa que el carné tenga contenido y caracteres válidos para XML
-            //El segundo parametro es el nombre que aparecerá en el mensaje de error si la validación falla
-            //El tercero es la lista donde el método agrega los errores
+
+            // Cada llamada revisa que el campo no esté vacío y que sus caracteres
+            // sean válidos para XML. El segundo parámetro es el nombre que aparece
+            // en el mensaje de error y el tercero es la lista donde se agregan.
             ValidarTextoObligatorio(estudiante.Carne, "El carné", errores);
-            //Revisa que los nombres tengan contenido valido
             ValidarTextoObligatorio(estudiante.Nombres, "Los nombres", errores);
-            //Revisa que los apellidos tengan contenido valido
             ValidarTextoObligatorio(estudiante.Apellidos, "Los apellidos", errores);
-            //La carrera es obligatoria para completar el registro académico
             ValidarTextoObligatorio(estudiante.Carrera, "La carrera", errores);
-            //Revisa que el correo tenga contenido valido
             ValidarTextoObligatorio(estudiante.Correo, "El correo", errores);
-            //Este if revisa que el correo tenga contenido y que su formato sea válido
-            if(!string.IsNullOrWhiteSpace(estudiante.Correo) && !EsCorreoValido(estudiante.Correo))
+
+            // Si el correo tiene contenido pero su formato no es válido, se agrega el error.
+            // Si estaba vacío, ValidarTextoObligatorio ya lo reportó.
+            if (!string.IsNullOrWhiteSpace(estudiante.Correo) && !EsCorreoValido(estudiante.Correo))
             {
-               //Agrega el error si el correo tiene contenido pero su formato no es válido 
-               errores.Add("El correo debe de tener un formato válido, por ejemplo: alumno@universidad.edu.");
+                errores.Add("El correo debe de tener un formato válido, por ejemplo: alumno@universidad.edu.");
             }
-            return errores;
-        }
-        //Revisa los datos antes de registrar un estudiante
-        // Debe recibir TODOS los estudiantes almacenados para detectar duplicados
-          public static List<string> ValidarRegistro(
-            Estudiante estudiante,
-            IEnumerable<Estudiante> estudiantes)
-        {
-            //Comprueba que no sea nulo
-            ComprobarColeccion(estudiantes);
-            //Revisa los campos del estudiante y guarda los errores
-            List<string> errores = ValidarDatos(estudiante);
-            if(estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Carne) && 
-            ExisteCarne(estudiante.Carne, estudiantes))
-            {
-                //No deja registrar un estudiante con un carné que ya exista
-                Console.WriteLine("El carné encontrado fue: " + estudiante.Carne +" pero no es único");
-                errores.Add("Ya existe un estudiante con ese carné");
-            }
-            //Devuelve los errores de los campos y posible carné duplicado
-            if(estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Correo) && 
-            ExisteCorreo(estudiante.Correo, estudiantes))
-            {
-                //No deja registrar un estudiante con un correo que ya exista
-                Console.WriteLine("El correo encontrado fue: " + estudiante.Correo +" pero no es único");
-                errores.Add("Ya existe un estudiante con ese correo");
-            }
-            
+
             return errores;
         }
 
+        // Revisa los datos antes de registrar un estudiante.
+        // Debe recibir TODOS los estudiantes almacenados para detectar duplicados.
+        public static List<string> ValidarRegistro(
+            Estudiante estudiante,
+            IEnumerable<Estudiante> estudiantes)
+        {
+            // La colección no puede ser nula
+            ComprobarColeccion(estudiantes);
+
+            // Primero se revisan los campos del estudiante
+            List<string> errores = ValidarDatos(estudiante);
+
+            // No se permite registrar un carné que ya exista
+            if (estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Carne) &&
+                ExisteCarne(estudiante.Carne, estudiantes))
+            {
+                errores.Add("Ya existe un estudiante con ese carné");
+            }
+
+            // No se permite registrar un correo que ya exista
+            if (estudiante != null && !string.IsNullOrWhiteSpace(estudiante.Correo) &&
+                ExisteCorreo(estudiante.Correo, estudiantes))
+            {
+                errores.Add("Ya existe un estudiante con ese correo");
+            }
+
+            // Devuelve los errores de los campos y los posibles duplicados
+            return errores;
+        }
+
+        // Revisa los datos antes de actualizar un estudiante.
+        // carneOriginal es el carné del estudiante que se quiere modificar.
         public static List<string> ValidarActualizacion(
             string carneOriginal,
             Estudiante estudiante,
             IEnumerable<Estudiante> estudiantes)
         {
-            //Comprueba que se haya proporcionado una colección
+            // La colección no puede ser nula
             ComprobarColeccion(estudiantes);
-            //Revisa que los nuevos datos cumplen las reglas de los campos
+
+            // Revisa que los nuevos datos cumplan las reglas de cada campo
             List<string> errores = ValidarDatos(estudiante);
-            //Comprueba que el estudiante original exista
-            //Si detecta un problema lo manda a la lista de errores
+
+            // Revisa que el estudiante original exista
             ValidarExistencia(carneOriginal, estudiantes, errores);
-            //Comprueba que el carné no se haya modificado
-           if (estudiante != null &&
-            !string.IsNullOrWhiteSpace(carneOriginal) &&
-            !string.IsNullOrWhiteSpace(estudiante.Carne) &&
-            !SonElMismoCarne(carneOriginal, estudiante.Carne))
+
+            // El carné es el identificador, por lo que no puede cambiar
+            if (estudiante != null &&
+                !string.IsNullOrWhiteSpace(carneOriginal) &&
+                !string.IsNullOrWhiteSpace(estudiante.Carne) &&
+                !SonElMismoCarne(carneOriginal, estudiante.Carne))
             {
                 errores.Add("El carné no se puede modificar, conserve el id original");
             }
+
             return errores;
         }
 
-         //Valida que el estudiante exista antes de intentar eliminarlo
-         public static List<string> ValidarEliminacion(
+        // Valida que el estudiante exista antes de intentar eliminarlo
+        public static List<string> ValidarEliminacion(
             string carne,
             IEnumerable<Estudiante> estudiantes)
         {
-            //Comprueba que la colección no sea nula
+            // La colección no puede ser nula
             ComprobarColeccion(estudiantes);
-            //Crea la lista donde se guardarán los errores
+
+            // Lista donde se guardan los errores
             var errores = new List<string>();
-            //revisa que se haya indicado un carné y que esté registrado
+
+            // Revisa que se haya indicado un carné y que esté registrado
             ValidarExistencia(carne, estudiantes, errores);
-            //Devuelve la lista con los resultados de la validación
+
             return errores;
         }
 
-         //Valida que el estudiante exista antes de intentar buscarlo
-         //Sigue la misma lógica que ValidarEliminacion, ya que buscar
-         //y eliminar comparten la misma regla: el carné debe existir
-         public static List<string> ValidarBusqueda(
+        // Valida que el estudiante exista antes de intentar buscarlo.
+        // Sigue la misma lógica que ValidarEliminacion, ya que buscar y
+        // eliminar comparten la misma regla: el carné debe existir.
+        public static List<string> ValidarBusqueda(
             string carne,
             IEnumerable<Estudiante> estudiantes)
         {
-            //Comprueba que la colección no sea nula
+            // La colección no puede ser nula
             ComprobarColeccion(estudiantes);
-            //Crea la lista donde se guardarán los errores
+
+            // Lista donde se guardan los errores
             var errores = new List<string>();
-            //revisa que se haya indicado un carné y que esté registrado
+
+            // Revisa que se haya indicado un carné y que esté registrado
             ValidarExistencia(carne, estudiantes, errores);
-            //Devuelve la lista con los resultados de la validación
+
             return errores;
         }
 
-        //Revisa si son el mismo carné, ignorando mayúsculas y espacios al inicio o final
+        // Revisa si son el mismo carné, ignorando mayúsculas y espacios al inicio o al final
         public static bool SonElMismoCarne(string primero, string segundo)
         {
-            //Comprueba si ambos valores son nulos o vacíos
-            if(string.IsNullOrWhiteSpace(primero) ||
-            string.IsNullOrWhiteSpace(segundo))
+            // Los valores vacíos no se consideran carnés iguales
+            if (string.IsNullOrWhiteSpace(primero) ||
+                string.IsNullOrWhiteSpace(segundo))
             {
-                //Los valores vacios no se consideran carnes iguales
                 return false;
             }
 
-            //Compara los valores ignorando espacios al inicio o final
+            // Compara los valores ignorando espacios al inicio o al final
             return string.Equals(
                 primero.Trim(),
                 segundo.Trim(),
                 StringComparison.OrdinalIgnoreCase
             );
         }
-         //Comprueba si un carné ya existe en la colección de estudiantes
-         public static bool ExisteCarne(string carne, 
-         IEnumerable<Estudiante> estudiantes)
+
+        // Comprueba si un carné ya existe en la colección de estudiantes
+        public static bool ExisteCarne(string carne,
+            IEnumerable<Estudiante> estudiantes)
         {
-            //Comprueba que la colección no sea nulo
+            // La colección no puede ser nula
             ComprobarColeccion(estudiantes);
-            //Comprueba si algún estudiante tiene el mismo carné que el proporcionado
-            return estudiantes.Any(e => e != null && SonElMismoCarne(e.Carne, carne));     
+
+            // Devuelve true si algún estudiante tiene el mismo carné
+            return estudiantes.Any(e => e != null && SonElMismoCarne(e.Carne, carne));
         }
 
-        //Revisa si son el mismo correo, ignorando espacios al inicio o final
+        // Revisa si son el mismo correo, ignorando mayúsculas y espacios al inicio o al final
         public static bool SonElMismoCorreo(string primero, string segundo)
         {
-            //Comprueba si ambos valores son nulos o vacíos
-            if(string.IsNullOrWhiteSpace(primero) ||
-            string.IsNullOrWhiteSpace(segundo))
+            // Los valores vacíos no se consideran correos iguales
+            if (string.IsNullOrWhiteSpace(primero) ||
+                string.IsNullOrWhiteSpace(segundo))
             {
-                //Los valores vacios no se consideran correos iguales
                 return false;
             }
 
-            //Compara los valores ignorando espacios al inicio o final
+            // Compara ignorando mayúsculas, así Ana@x.com y ana@x.com son el mismo correo
             return string.Equals(
                 primero.Trim(),
                 segundo.Trim(),
-                StringComparison.Ordinal
+                StringComparison.OrdinalIgnoreCase
             );
         }
 
-        //Comprueba si un correo ya existe en la colección de estudiantes
-         public static bool ExisteCorreo(string correo, 
-         IEnumerable<Estudiante> estudiantes)
+        // Comprueba si un correo ya existe en la colección de estudiantes
+        public static bool ExisteCorreo(string correo,
+            IEnumerable<Estudiante> estudiantes)
         {
-            //Comprueba que la colección no sea nulo
+            // La colección no puede ser nula
             ComprobarColeccion(estudiantes);
-            //Comprueba si algún estudiante tiene el mismo correo que el proporcionado
-            return estudiantes.Any(e => e != null && SonElMismoCorreo(e.Correo, correo));     
+
+            // Devuelve true si algún estudiante tiene el mismo correo
+            return estudiantes.Any(e => e != null && SonElMismoCorreo(e.Correo, correo));
         }
 
-        //Comprueba que la colección no sea nula
+        // Comprueba que se haya indicado un carné y que exista en la colección.
+        // Agrega el error correspondiente a la lista si algo falla.
         private static void ValidarExistencia(
             string carne,
             IEnumerable<Estudiante> estudiantes,
             List<string> errores)
         {
-            //Comprueba que la colección no sea nula
-            if(string.IsNullOrWhiteSpace(carne))
+            // Si no se indicó un carné, se agrega el error
+            if (string.IsNullOrWhiteSpace(carne))
             {
-                //Agrega un error si no se proporcionó un carné
-                errores.Add("Debe indicar el carné del estudiante que desea modificar o eliminar");
+                errores.Add("Debe indicar el carné del estudiante.");
             }
-            //Solo lo verifica si tiene contenido adentro  
-            else if(!ExisteCarne(carne, estudiantes))
+            // Solo busca en la colección si el carné tiene contenido
+            else if (!ExisteCarne(carne, estudiantes))
             {
-                //Agrega un error si el carné no se encuentra en la colección
                 errores.Add("No se encontró un estudiante con ese carné");
             }
         }
-        
-        //El metodo comrpeuba que el campo tenga contenido válido para XML
-          private static void ValidarTextoObligatorio(
+
+        // Comprueba que el campo no esté vacío y que solo tenga caracteres válidos para XML
+        private static void ValidarTextoObligatorio(
             string valor,
             string campo,
             List<string> errores)
@@ -217,22 +230,20 @@ namespace GestionEstudiantes
             if (string.IsNullOrWhiteSpace(valor))
             {
                 // Une el nombre del campo con el mensaje
-                // Ejemplo: "Los nombres: es un dato obligatorio"
+                // Ejemplo: "Los nombres: es un dato obligatorio."
                 errores.Add(campo + ": es un dato obligatorio.");
-                // Termina este método porque no hay texto que revisar
-                // El método que lo llamó puede continuar con los demás campos
+
+                // No hay texto que revisar. El método que lo llamó continúa con los demás campos.
                 return;
             }
 
             try
             {
-                // Comprueba que todos los caracteres puedan guardarse en XML
-                // Si encuentra uno no permitido, lanza una XmlException
-                // Símbolos normales como & y < se permiten:
-                // el serializador se encarga de representarlos correctamente
+                // Lanza una XmlException si encuentra un carácter que XML no permite.
+                // Símbolos normales como & y < sí se permiten, porque el serializador
+                // se encarga de representarlos correctamente.
                 XmlConvert.VerifyXmlChars(valor);
             }
-            // Captura específicamente el error de caracteres inválidos para XML
             catch (XmlException)
             {
                 // Convierte ese problema en un mensaje de validación
@@ -240,63 +251,70 @@ namespace GestionEstudiantes
             }
         }
 
-        //Verifica si el correo tiene un formato válido
+        // Verifica si el correo tiene un formato válido
         public static bool EsCorreoValido(string correo)
         {
-            //Verificamos que no venga vacio o contenga espacios
+            // Un correo vacío no es válido
             if (string.IsNullOrWhiteSpace(correo))
             {
                 return false;
             }
-           
-           
-            //Quita espacios al inicio y final del correo
+
+            // Quita espacios al inicio y al final
             string texto = correo.Trim();
-            //Si el correo está vacío, no es válido
+
             try
             {
+                // MailAddress lanza FormatException si el formato no es válido
                 var direccion = new MailAddress(texto);
-                //Retorna true si el correo tiene un formato válido, ignorando mayúsculas y minúsculas
+
+                // Comprueba que la dirección resultante sea igual al texto escrito.
+                // Así se rechazan entradas como "Nombre <a@b.com>", que MailAddress acepta.
                 return string.Equals(
                     direccion.Address,
                     texto,
                     StringComparison.OrdinalIgnoreCase
                 );
-            }catch (FormatException)
+            }
+            catch (FormatException)
             {
-                //Si el correo no tiene un formato válido, retorna false
+                // El formato no es válido
                 return false;
             }
         }
-        //Verifica si el carné tiene un formato válido que consiste en 6 caracteres numericos
+
+        // Verifica si el carné tiene un formato válido: 6 caracteres numéricos.
+        // Versión simple que solo devuelve true o false.
         public static bool EsCarneValido(string carne)
         {
-            //Verificamos que no venga vacio o contenga espacios
+            // Un carné vacío no es válido
             if (string.IsNullOrWhiteSpace(carne))
             {
                 return false;
             }
-           
-            //Quita espacios al inicio y final del carnet
+
+            // Quita espacios al inicio y al final
             string texto = carne.Trim();
+
             try
             {
-                //Intenta convertir el carné a un número entero
+                // Intenta convertir el carné a un número entero
                 int numero = int.Parse(texto);
             }
             catch (FormatException)
             {
-                //Si el carné no es un número válido, retorna false
+                // No es un número válido
                 return false;
             }
-            
-            if(carne.Length != 6 || carne.Contains('+') || carne.Contains('-'))
+
+            // Debe tener 6 caracteres y no contener signos
+            if (carne.Length != 6 || carne.Contains('+') || carne.Contains('-'))
             {
                 return false;
             }
             else
             {
-                //Retorna true si el carné tiene un formato válido, ignorando mayúsculas y minúsculas
+                // Comprueba que no haya espacios sobrantes en el carné original
                 return string.Equals(
                     texto,
                     carne,
@@ -304,6 +322,9 @@ namespace GestionEstudiantes
                 );
             }
         }
+
+        // Verifica si el carné tiene un formato válido: 6 dígitos numéricos.
+        // Además devuelve en mensajeError el motivo del rechazo, para mostrarlo al usuario.
         public static bool EsCarneValido(string carne, out string mensajeError)
         {
             // 1. Validar que no esté vacío
@@ -322,7 +343,7 @@ namespace GestionEstudiantes
                 return false;
             }
 
-            // 3. Validar que no contenga signos numéricos (+ / -)
+            // 3. Validar que no contenga signos (+ o -)
             if (texto.Contains('+') || texto.Contains('-'))
             {
                 mensajeError = "El carné no debe contener signos (+ o -).";
@@ -336,17 +357,17 @@ namespace GestionEstudiantes
                 return false;
             }
 
-            // Si pasa todas las validaciones
+            // Pasó todas las validaciones
             mensajeError = string.Empty;
             return true;
         }
-        //Compruba que el codigo que llama al validador entregue una coleccion
+
+        // Comprueba que quien llama al validador entregue una colección.
+        // Si es nula, lanza una excepción para avisar que es un error de programación.
         private static void ComprobarColeccion(IEnumerable<Estudiante> estudiantes)
         {
-            //Si la colección es nula, lanza una excepción para que el código que llama al validador sepa que debe proporcionar la colección
-          if(estudiantes == null)
+            if (estudiantes == null)
             {
-
                 throw new ArgumentNullException(
                     nameof(estudiantes),
                     "Debe de dar la colección completa de estudiantes cargados"
